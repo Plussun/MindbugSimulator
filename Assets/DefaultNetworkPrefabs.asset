@@ -9,10 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
-  m_Name: Bug1
+  m_Script: {fileID: 11500000, guid: e651dbb3fbac04af2b8f5abf007ddc23, type: 3}
+  m_Name: DefaultNetworkPrefabs
   m_EditorClassIdentifier: 
-  CardName: Bug1
-  CardDataID: 1
-  Power: 1
-  Description: this is bug 1.
+  IsDefault: 1
+  List: []

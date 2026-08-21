@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: Bug2
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
+  CardName: Bug2
+  CardDataID: 2
+  Power: 2
+  Description: this is bug 2.
