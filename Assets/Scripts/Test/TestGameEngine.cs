@@ -11,7 +11,6 @@ public class TestGameEngine : MonoBehaviour
 
     public TMP_InputField TestInputField;
     public Button TestButton;
-    public TMP_Text StatusText;
     NetworkManager networkManager;
     public NetworkController NetworkController;
 
@@ -31,8 +30,19 @@ public class TestGameEngine : MonoBehaviour
                 GameController.GameEngine.StartGame();
                 break;
             case string s when s.StartsWith("play"):
-                string cardID = s.Substring(4).Trim();
-                NetworkController.PlayCardRequest(int.Parse(cardID));
+                string playCardID = s.Substring(4).Trim();
+                NetworkController.PlayCardRequest(int.Parse(playCardID));
+                break;
+            case string s when s.StartsWith("attack"):
+                string attackCardID = s.Substring(6).Trim();
+                NetworkController.AttackDecisionRequest(int.Parse(attackCardID));
+                break;
+            case "noblock":
+                NetworkController.BlockDecisionRequest(false, 0);
+                break;
+            case string s when s.StartsWith("block"):
+                string blockCardID = s.Substring(5).Trim();
+                NetworkController.BlockDecisionRequest(true, int.Parse(blockCardID));
                 break;
             case "bug":
                 NetworkController.MindbugDecisionRequest(true);

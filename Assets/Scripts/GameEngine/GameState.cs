@@ -9,6 +9,9 @@ public class GameState
     public int ActivePlayerID;//当前回合的玩家
     public int ExpectedPlayerID;//等待玩家决定（使用bug或者抵挡）的玩家
 
+    public CardInstance PendingCardInstance; // 当前正在等待Mindbug决策的卡牌实例
+    public CardInstance PendingBlockCardInstance; // 当前正在等待Block决策的卡牌实例
+
     public GameState()
     {
         CurrentPhase = GamePhase.Setup;
@@ -22,5 +25,6 @@ public enum GamePhase
     Setup,
     WaitingForMainAction,
     WaitingForMindbugDecision,
+    WaitingForBlockDecision,
     GameOver
 }
