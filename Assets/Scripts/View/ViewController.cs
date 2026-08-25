@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 public class ViewController : MonoBehaviour
 {
@@ -8,32 +9,65 @@ public class ViewController : MonoBehaviour
     public Transform LocalPlayer;
     public Transform OpponentPlayer;
     public Transform PendingCardsContainer;
+    public Transform WinnerContainer;
+
+    public Button NoBlockButton;
+    public Button NoMindbugButton;
+    public Button UseMindbugButton;
+
     public GameController gameController;
     public NetworkController networkController;
+
+    private GamePhase currentPhase;
+    private bool isLocalPlayerExpected;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        NoBlockButton.onClick.AddListener(OnNoBlockButtonClicked);
     }
-    public void RefreshView(CardNetworkState[] localPlayerHand,
+    public void RefreshView(
+        int gamePhase,
+        int winnerPlayerID,
+        int localPlayerID,
+        int ActivePlayerID,
+        int ExpectedPlayerID,
+        int localPlayerLife,
+        int opponentPlayerLife,
+        int localPlayerMindbugCount,
+        int opponentPlayerMindbugCount,
+        int localPlayerDiscardCount,
+        int opponentPlayerDiscardCount,
+        CardNetworkState[] localPlayerHand,
         CardNetworkState[] localPlayerField,
         CardNetworkState[] opponentPlayerField,
         int opponentHandCount,
-        CardNetworkState pendingCard
+        CardNetworkState pendingCard,
+        CardNetworkState pendingAttack
         )
     {
-        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand");
-        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field");
-        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field");
+        currentPhase = (GamePhase)gamePhase;
+        isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
+        
+        RefreshPlayerPortrait(true, localPlayerLife, 
+            localPlayerMindbugCount, isLocalPlayerExpected);
+        RefreshPlayerPortrait(false, opponentPlayerLife, opponentPlayerMindbugCount,
+            !isLocalPlayerExpected);
+        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack);
+        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack);
+        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
         RefreshPendingCardsView(pendingCard);
+        RefreshDiscardCount(true, localPlayerDiscardCount);
+        RefreshDiscardCount(false, opponentPlayerDiscardCount);
+        RefreshButtons();
+        RefreshWinnerView(winnerPlayerID, localPlayerID);
         
     }
 
     public void RefreshHandOrFieldView(CardNetworkState[] cards,
         Transform playerTransform,
-        string handOrField = "Hand")
+        string handOrField,CardNetworkState pendingAttack)
     {
         Transform handContainer = playerTransform.Find(handOrField);
         // 清空现有手牌视图
@@ -50,12 +84,29 @@ public class ViewController : MonoBehaviour
             CardData cardData = GetCardDataByID(cards[i].CardDataID);
             cardView.UpdateCardView(cardData.CardName, cards[i].currentPower, cards[i].CardInstanceID);
 
+            //如果是手牌，则绑定出牌事件
             if(playerTransform == LocalPlayer&& handOrField == "Hand")
             {
                 cardView.SetClickAction(networkController.PlayCardRequest);
             }
+            //如果是场上卡牌，则绑定阻挡事件
+            if(playerTransform == LocalPlayer&& handOrField == "Field")
+            {
+                cardView.SetClickAction(AttackOrBlock);
+            }
+
             cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
+            
+            // 高亮显示当前待攻击决策的卡牌
+            if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
+            {
+                cardView.transform.Find("Highlight").gameObject.SetActive(true);
+            }
+            else
+            {
+                cardView.transform.Find("Highlight").gameObject.SetActive(false);
+            }
         }
     }
 
@@ -98,6 +149,95 @@ public class ViewController : MonoBehaviour
             pendingCard.currentPower, pendingCard.CardInstanceID);
         cardView.transform.localPosition = new Vector3(0, 0, 0); // 调整卡牌位置
         cardView.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // 确保卡牌缩放为0.5
+    }
+
+    public void RefreshPlayerPortrait(bool isLocalPlayer, int life, int mindbugCount,
+        bool isPlayerExpected)
+    {
+        Transform portraitTransform = 
+            isLocalPlayer ? LocalPlayer.Find("Portrait") : OpponentPlayer.Find("Portrait");
+        TMP_Text lifeText = portraitTransform.Find("LifeText").GetComponent<TMP_Text>();
+        lifeText.text = life.ToString();
+        TMP_Text mindbugText = portraitTransform.Find("MindbugCount").GetComponent<TMP_Text>();
+        mindbugText.text = mindbugCount.ToString();
+        GameObject expectedText = portraitTransform.Find("Highlight").gameObject;
+        expectedText.SetActive(isPlayerExpected);
+    }
+
+    public void RefreshDiscardCount(bool isLocalPlayer, int discardCount)
+    {
+        Transform portraitTransform = 
+            isLocalPlayer ? LocalPlayer.Find("Discard") : OpponentPlayer.Find("Discard");
+        TMP_Text discardText = portraitTransform.Find("DiscardCount").GetComponent<TMP_Text>();
+        discardText.text = discardCount.ToString();
+    }
+
+    public void RefreshButtons()
+    {
+        if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
+        {
+            UseMindbugButton.gameObject.SetActive(true);
+            NoMindbugButton.gameObject.SetActive(true);
+            NoBlockButton.gameObject.SetActive(false);
+        }
+        else if(currentPhase == GamePhase.WaitingForBlockDecision && isLocalPlayerExpected)
+        {
+            NoBlockButton.gameObject.SetActive(true);
+            UseMindbugButton.gameObject.SetActive(false);
+            NoMindbugButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            UseMindbugButton.gameObject.SetActive(false);
+            NoMindbugButton.gameObject.SetActive(false);
+            NoBlockButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void RefreshWinnerView(int winnerPlayerID,int localPlayerID)
+    {
+
+        if(winnerPlayerID == -1)
+        {
+            WinnerContainer.Find("Win").gameObject.SetActive(false);
+            WinnerContainer.Find("Lose").gameObject.SetActive(false);
+            return;
+        }
+        if(winnerPlayerID == localPlayerID)
+        {
+            WinnerContainer.Find("Win").gameObject.SetActive(true);
+            WinnerContainer.Find("Lose").gameObject.SetActive(false);
+
+        }
+        else
+        {
+            WinnerContainer.Find("Win").gameObject.SetActive(false);
+            WinnerContainer.Find("Lose").gameObject.SetActive(true);
+        }
+    }
+
+
+
+    public void OnNoBlockButtonClicked()
+    {
+        networkController.BlockDecisionRequest(false, -1);
+    }
+
+    public void AttackOrBlock(int cardInstanceID)
+    {
+        currentPhase = (GamePhase)networkController.GetGamePhase();
+        if(currentPhase == GamePhase.WaitingForBlockDecision)
+        {
+            networkController.BlockDecisionRequest(true,cardInstanceID);
+        }
+        else if(currentPhase == GamePhase.WaitingForMainAction)
+        {
+            networkController.AttackDecisionRequest(cardInstanceID);
+        }
+        else
+        {
+            Debug.Log("当前阶段不允许进行攻击或抵挡操作");
+        }
     }
 
     public CardData GetCardDataByID(int cardDataID)

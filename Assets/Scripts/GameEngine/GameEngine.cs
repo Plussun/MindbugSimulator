@@ -144,9 +144,9 @@ public class GameEngine
             Debug.Log("玩家" + playerID + "不是当前回合玩家，无法进行攻击决策");
             return;
         }
-        State.PendingCardInstance = State.Players[State.ActivePlayerID].Field.Find(
+        State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
             card => card.CardInstanceID == cardInstanceID);
-        if(State.PendingCardInstance == null)
+        if(State.PendingAttackCardInstance == null)
         {
             Debug.Log("玩家" + playerID + "的场地中没有ID为"
                  + cardInstanceID + "的卡牌");
@@ -175,7 +175,7 @@ public class GameEngine
             {
                 Debug.Log("玩家" + State.ExpectedPlayerID + 
                     "没有使用阻挡，生命值减少1，当前生命值为0，游戏结束");
-                State.PendingCardInstance = null;
+                State.PendingAttackCardInstance = null;
                 State.PendingBlockCardInstance = null;
                 return;
             }
@@ -198,21 +198,21 @@ public class GameEngine
             else
             {
                 State.PendingBlockCardInstance = blockCard;
-                if(State.PendingBlockCardInstance.CurrentPower > State.PendingCardInstance.CurrentPower)
+                if(State.PendingBlockCardInstance.CurrentPower > State.PendingAttackCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，成功阻挡了攻击");
                     //阻挡成功，攻击卡牌被移除，阻挡卡牌不变
-                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingCardInstance);
-                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingCardInstance);
+                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingAttackCardInstance);
+                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingAttackCardInstance);
                 }
-                else if(State.PendingBlockCardInstance.CurrentPower == State.PendingCardInstance.CurrentPower)
+                else if(State.PendingBlockCardInstance.CurrentPower == State.PendingAttackCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，阻挡与攻击卡牌同等强度，双方都被移除");
-                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingCardInstance);
+                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingAttackCardInstance);
                     State.Players[State.ExpectedPlayerID].Field.Remove(State.PendingBlockCardInstance);
-                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingCardInstance);
+                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingAttackCardInstance);
                     State.Players[State.ExpectedPlayerID].DiscardPile.Add(State.PendingBlockCardInstance);
                 }
                 else
@@ -228,7 +228,7 @@ public class GameEngine
 
         ChangeGamePhase(GamePhase.WaitingForMainAction);
         ChangeActivePlayer(1 - State.ActivePlayerID); // 切换为另一个玩家
-        State.PendingCardInstance = null;
+        State.PendingAttackCardInstance = null;
         State.PendingBlockCardInstance = null;
     }
 
@@ -241,6 +241,7 @@ public class GameEngine
         if(player.Life <= 0)
         {
             ChangeGamePhase(GamePhase.GameOver);
+            State.WinnerPlayerID = 1 - playerID; // 设置获胜玩家ID
             Debug.Log("玩家" + playerID + "的生命值为0，游戏结束");
             return true; // 游戏结束
         }

@@ -14,6 +14,8 @@ public class NetworkController : NetworkBehaviour
 
     public TMP_Text StatusText;
 
+    private GamePhase clientCurrentPhase = GamePhase.Setup;
+
     //以下为与连接有关的方法
     public override void OnNetworkSpawn()
     {
@@ -133,6 +135,7 @@ public class NetworkController : NetworkBehaviour
     {
         GameState state = GameController.GameEngine.State;
         int phase = (int)state.CurrentPhase;
+        int winnerPlayerID = state.WinnerPlayerID;
         int activePlayerId = state.ActivePlayerID;
         int expectedPlayerId = state.ExpectedPlayerID;
         CardNetworkState pendingCard = 
@@ -149,6 +152,22 @@ public class NetworkController : NetworkBehaviour
                 CardInstanceID = state.PendingCardInstance.CardInstanceID,
                 CardDataID = state.PendingCardInstance.CardData.CardDataID,
                 currentPower = state.PendingCardInstance.CurrentPower
+            };
+        }
+        CardNetworkState pendingAttackCard = 
+            new CardNetworkState
+            {
+                CardInstanceID = -1,
+                CardDataID = 0,
+                currentPower = 0
+            };
+        if(state.PendingAttackCardInstance != null)
+        {
+            pendingAttackCard = new CardNetworkState
+            {
+                CardInstanceID = state.PendingAttackCardInstance.CardInstanceID,
+                CardDataID = state.PendingAttackCardInstance.CardData.CardDataID,
+                currentPower = state.PendingAttackCardInstance.CurrentPower
             };
         }
 
@@ -182,10 +201,12 @@ public class NetworkController : NetworkBehaviour
 
         UpdateStatusClientRpc(
             phase,
+            winnerPlayerID,
             activePlayerId,
             expectedPlayerId,
             0,
             pendingCard,
+            pendingAttackCard,
             player0Life,
             player1Life,
             player0MindbugCount,
@@ -200,10 +221,12 @@ public class NetworkController : NetworkBehaviour
         );
         UpdateStatusClientRpc(
             phase,
+            winnerPlayerID,
             activePlayerId,
             expectedPlayerId,
             1,
             pendingCard,
+            pendingAttackCard,
             player1Life,
             player0Life,
             player1MindbugCount,
@@ -222,10 +245,12 @@ public class NetworkController : NetworkBehaviour
     [ClientRpc]
     private void UpdateStatusClientRpc(
         int phase,
+        int winnerPlayerID,
         int activePlayerId,
         int expectedPlayerId,
         int playerId,
         CardNetworkState pendingCard,
+        CardNetworkState pendingAttackCard,
         int playerLife,
         int opponentLife,
         int playerMindbugCount,
@@ -300,13 +325,31 @@ public class NetworkController : NetworkBehaviour
             
         }
 
+        clientCurrentPhase = (GamePhase)phase;
         viewController.RefreshView(
+                gamePhase: phase,
+                winnerPlayerID: winnerPlayerID,
+                localPlayerID: playerId,
+                ActivePlayerID: activePlayerId,
+                ExpectedPlayerID: expectedPlayerId,
+                localPlayerLife: playerLife,
+                opponentPlayerLife: opponentLife,
+                localPlayerMindbugCount: playerMindbugCount,
+                opponentPlayerMindbugCount: opponentMindbugCount,
+                localPlayerDiscardCount: playerDiscard.Length,
+                opponentPlayerDiscardCount: opponentDiscard.Length,
                 localPlayerHand: playerHand,
                 localPlayerField: playerField,
                 opponentPlayerField: opponentField,
                 opponentHandCount: opponentHandCount,
-                pendingCard: pendingCard
+                pendingCard: pendingCard,
+                pendingAttack: pendingAttackCard
             );
+    }
+
+    public int GetGamePhase()
+    {
+        return (int)clientCurrentPhase;
     }
 
 
