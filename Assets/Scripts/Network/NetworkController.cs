@@ -10,6 +10,7 @@ public class NetworkController : NetworkBehaviour
     private ulong player0ClientId = UnassignedClientId;
     private ulong player1ClientId = UnassignedClientId;
     NetworkManager networkManager;
+    public ViewController viewController;
 
     public TMP_Text StatusText;
 
@@ -134,8 +135,22 @@ public class NetworkController : NetworkBehaviour
         int phase = (int)state.CurrentPhase;
         int activePlayerId = state.ActivePlayerID;
         int expectedPlayerId = state.ExpectedPlayerID;
-        int pendingCardInstanceId = GameController.GameEngine.State.PendingCardInstance != null ?
-            GameController.GameEngine.State.PendingCardInstance.CardInstanceID : -1;
+        CardNetworkState pendingCard = 
+            new CardNetworkState
+            {
+                CardInstanceID = -1,
+                CardDataID = 0,
+                currentPower = 0
+            };
+        if(state.PendingCardInstance != null)
+        {
+            pendingCard = new CardNetworkState
+            {
+                CardInstanceID = state.PendingCardInstance.CardInstanceID,
+                CardDataID = state.PendingCardInstance.CardData.CardDataID,
+                currentPower = state.PendingCardInstance.CurrentPower
+            };
+        }
 
         CardNetworkState[] player0Hand = GetCardNetworkStates(state.Players[0].Hand);
         CardNetworkState[] player0Field = GetCardNetworkStates(state.Players[0].Field);
@@ -170,7 +185,7 @@ public class NetworkController : NetworkBehaviour
             activePlayerId,
             expectedPlayerId,
             0,
-            pendingCardInstanceId,
+            pendingCard,
             player0Life,
             player1Life,
             player0MindbugCount,
@@ -188,7 +203,7 @@ public class NetworkController : NetworkBehaviour
             activePlayerId,
             expectedPlayerId,
             1,
-            pendingCardInstanceId,
+            pendingCard,
             player1Life,
             player0Life,
             player1MindbugCount,
@@ -210,7 +225,7 @@ public class NetworkController : NetworkBehaviour
         int activePlayerId,
         int expectedPlayerId,
         int playerId,
-        int pendingCardInstanceId,
+        CardNetworkState pendingCard,
         int playerLife,
         int opponentLife,
         int playerMindbugCount,
@@ -282,7 +297,16 @@ public class NetworkController : NetworkBehaviour
                 "手牌：" + handText + "\n" +
                 "弃牌：" + playerDiscardText;
             Debug.Log(StatusText.text);
+            
         }
+
+        viewController.RefreshView(
+                localPlayerHand: playerHand,
+                localPlayerField: playerField,
+                opponentPlayerField: opponentField,
+                opponentHandCount: opponentHandCount,
+                pendingCard: pendingCard
+            );
     }
 
 
@@ -316,7 +340,7 @@ public class NetworkController : NetworkBehaviour
             {
                 CardInstanceID = cards[i].CardInstanceID,
                 CardDataID = cards[i].CardData.CardDataID,
-                currentPower = cards[i].currentPower
+                currentPower = cards[i].CurrentPower
             };
         }
 

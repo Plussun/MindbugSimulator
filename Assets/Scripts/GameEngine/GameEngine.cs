@@ -21,8 +21,10 @@ public class GameEngine
     }
     public void SetRandomActivePlayer()
     {
-        State.ActivePlayerID = Random.Range(0, 2);
-        Debug.Log("随机选择玩家" + State.ActivePlayerID + "作为当前回合玩家");
+        //State.ActivePlayerID = Random.Range(0, 2);
+        //Debug.Log("随机选择玩家" + State.ActivePlayerID + "作为当前回合玩家");
+        State.ActivePlayerID = 0; 
+        Debug.Log("测试时固定选择玩家" + State.ActivePlayerID + "作为当前回合玩家");
     }
 
     public void SetExpectedPlayer(int playerID)
@@ -81,6 +83,7 @@ public class GameEngine
             ChangeGamePhase(GamePhase.WaitingForMindbugDecision);
             SetExpectedPlayer(1 - playerID); // 假设有两个玩家，切换到另一个玩家
             State.PendingCardInstance = cardToPlay;
+            player.Hand.Remove(cardToPlay);
             Debug.Log("游戏阶段切换为" + State.CurrentPhase + 
                 "，等待玩家" + State.ExpectedPlayerID + "的Mindbug决策");
         }
@@ -106,7 +109,7 @@ public class GameEngine
             && useMindbug)
         {
             // 假设使用Mindbug
-            State.Players[State.ActivePlayerID].Hand.Remove(State.PendingCardInstance);
+        
             State.Players[State.ExpectedPlayerID].Field.Add(State.PendingCardInstance);
             State.Players[State.ExpectedPlayerID].MindbugCount-=1;
             Debug.Log("玩家" + playerID + "使用了Mindbug，卡牌" 
@@ -118,7 +121,7 @@ public class GameEngine
         else
         {
             //如果没有使用mindbug，则将卡牌加入到当前回合玩家的场上,切换另一个玩家
-            State.Players[State.ActivePlayerID].Hand.Remove(State.PendingCardInstance);
+            
             State.Players[State.ActivePlayerID].Field.Add(State.PendingCardInstance);
             ChangeGamePhase(GamePhase.WaitingForMainAction);
             ChangeActivePlayer(1 - State.ActivePlayerID); // 切换为另一个
@@ -195,7 +198,7 @@ public class GameEngine
             else
             {
                 State.PendingBlockCardInstance = blockCard;
-                if(State.PendingBlockCardInstance.currentPower > State.PendingCardInstance.currentPower)
+                if(State.PendingBlockCardInstance.CurrentPower > State.PendingCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，成功阻挡了攻击");
@@ -203,7 +206,7 @@ public class GameEngine
                     State.Players[State.ActivePlayerID].Field.Remove(State.PendingCardInstance);
                     State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingCardInstance);
                 }
-                else if(State.PendingBlockCardInstance.currentPower == State.PendingCardInstance.currentPower)
+                else if(State.PendingBlockCardInstance.CurrentPower == State.PendingCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，阻挡与攻击卡牌同等强度，双方都被移除");
