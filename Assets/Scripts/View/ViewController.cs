@@ -60,7 +60,7 @@ public class ViewController : MonoBehaviour
         RefreshPendingCardsView(pendingCard);
         RefreshDiscardCount(true, localPlayerDiscardCount);
         RefreshDiscardCount(false, opponentPlayerDiscardCount);
-        RefreshButtons();
+        RefreshButtons(localPlayerMindbugCount);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
         
     }
@@ -84,16 +84,29 @@ public class ViewController : MonoBehaviour
             CardData cardData = GetCardDataByID(cards[i].CardDataID);
             cardView.UpdateCardView(cardData.CardName, cards[i].currentPower, cards[i].CardInstanceID);
 
-            //如果是手牌，则绑定出牌事件
-            if(playerTransform == LocalPlayer&& handOrField == "Hand")
+            bool isLocalHand = (playerTransform == LocalPlayer && handOrField == "Hand");
+            bool isLocalField = (playerTransform == LocalPlayer && handOrField == "Field");
+            //如果是本方手牌，且当前是本方主动回合，则绑定出牌事件
+            if(isLocalHand &&
+                currentPhase == GamePhase.WaitingForMainAction &&
+                isLocalPlayerExpected)
             {
                 cardView.SetClickAction(networkController.PlayCardRequest);
             }
-            //如果是场上卡牌，则绑定阻挡事件
-            if(playerTransform == LocalPlayer&& handOrField == "Field")
+            if(isLocalField &&
+                currentPhase == GamePhase.WaitingForMainAction &&
+                isLocalPlayerExpected)
             {
-                cardView.SetClickAction(AttackOrBlock);
+                cardView.SetClickAction(networkController.AttackDecisionRequest);
             }
+            //如果是本方场上卡牌，且当前是本方阻挡决策阶段，则绑定阻挡事件
+            if(isLocalField &&
+                currentPhase == GamePhase.WaitingForBlockDecision &&
+                isLocalPlayerExpected)
+            {
+                cardView.SetClickAction(BlockDecision);
+            }
+
 
             cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
@@ -172,24 +185,35 @@ public class ViewController : MonoBehaviour
         discardText.text = discardCount.ToString();
     }
 
-    public void RefreshButtons()
+    public void RefreshButtons(int localPlayerMindbugCount)
     {
         if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
         {
-            UseMindbugButton.gameObject.SetActive(true);
+            if(localPlayerMindbugCount > 0)
+            {
+                UseMindbugButton.gameObject.SetActive(true);
+            }
+            else
+            {
+                UseMindbugButton.gameObject.SetActive(false);
+            }
             NoMindbugButton.gameObject.SetActive(true);
+
             NoBlockButton.gameObject.SetActive(false);
         }
         else if(currentPhase == GamePhase.WaitingForBlockDecision && isLocalPlayerExpected)
         {
-            NoBlockButton.gameObject.SetActive(true);
+            
             UseMindbugButton.gameObject.SetActive(false);
             NoMindbugButton.gameObject.SetActive(false);
+
+            NoBlockButton.gameObject.SetActive(true);
         }
         else
         {
             UseMindbugButton.gameObject.SetActive(false);
             NoMindbugButton.gameObject.SetActive(false);
+
             NoBlockButton.gameObject.SetActive(false);
         }
     }
@@ -216,6 +240,10 @@ public class ViewController : MonoBehaviour
         }
     }
 
+    public void BlockDecision(int cardInstanceID)
+    {
+        networkController.BlockDecisionRequest(true, cardInstanceID);
+    }
 
 
     public void OnNoBlockButtonClicked()
@@ -223,22 +251,6 @@ public class ViewController : MonoBehaviour
         networkController.BlockDecisionRequest(false, -1);
     }
 
-    public void AttackOrBlock(int cardInstanceID)
-    {
-        currentPhase = (GamePhase)networkController.GetGamePhase();
-        if(currentPhase == GamePhase.WaitingForBlockDecision)
-        {
-            networkController.BlockDecisionRequest(true,cardInstanceID);
-        }
-        else if(currentPhase == GamePhase.WaitingForMainAction)
-        {
-            networkController.AttackDecisionRequest(cardInstanceID);
-        }
-        else
-        {
-            Debug.Log("当前阶段不允许进行攻击或抵挡操作");
-        }
-    }
 
     public CardData GetCardDataByID(int cardDataID)
     {

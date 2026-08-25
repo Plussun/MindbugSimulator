@@ -27,6 +27,10 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     }
     public void OnPointerClick(PointerEventData eventData)
     {
+        if(clickAction == null)
+        {
+            return;
+        }
         Debug.Log("Card clicked: " + CardInstanceID);
         clickAction?.Invoke(CardInstanceID);
     }
