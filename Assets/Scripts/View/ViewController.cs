@@ -36,6 +36,8 @@ public class ViewController : MonoBehaviour
         int opponentPlayerLife,
         int localPlayerMindbugCount,
         int opponentPlayerMindbugCount,
+        int localPlayerDeckCount,
+        int opponentPlayerDeckCount,
         int localPlayerDiscardCount,
         int opponentPlayerDiscardCount,
         CardNetworkState[] localPlayerHand,
@@ -58,6 +60,9 @@ public class ViewController : MonoBehaviour
         RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
         RefreshPendingCardsView(pendingCard);
+
+        RefreshDeckCount(true, localPlayerDeckCount);
+        RefreshDeckCount(false, opponentPlayerDeckCount);
         RefreshDiscardCount(true, localPlayerDiscardCount);
         RefreshDiscardCount(false, opponentPlayerDiscardCount);
         RefreshButtons(localPlayerMindbugCount);
@@ -183,6 +188,13 @@ public class ViewController : MonoBehaviour
             isLocalPlayer ? LocalPlayer.Find("Discard") : OpponentPlayer.Find("Discard");
         TMP_Text discardText = portraitTransform.Find("DiscardCount").GetComponent<TMP_Text>();
         discardText.text = discardCount.ToString();
+    }
+    public void RefreshDeckCount(bool isLocalPlayer, int deckCount)
+    {
+        Transform portraitTransform = 
+            isLocalPlayer ? LocalPlayer.Find("Deck") : OpponentPlayer.Find("Deck");
+        TMP_Text deckText = portraitTransform.Find("DeckCount").GetComponent<TMP_Text>();
+        deckText.text = deckCount.ToString();
     }
 
     public void RefreshButtons(int localPlayerMindbugCount)

@@ -11,8 +11,8 @@ public class GameController : MonoBehaviour
     void Awake()
     {
         GameEngine = new GameEngine();
-        GameEngine.SetPlayerHand(0, TestHand);
-        GameEngine.SetPlayerHand(1, TestHand);
+        GameEngine.SetPlayerDeck(0, TestHand);
+        GameEngine.SetPlayerDeck(1, TestHand);
     }
 
     // Update is called once per frame

@@ -180,6 +180,8 @@ public class NetworkController : NetworkBehaviour
 
         int player0Life = state.Players[0].Life;
         int player1Life = state.Players[1].Life;
+        int player0DeckCount = state.Players[0].Deck.Count;
+        int player1DeckCount = state.Players[1].Deck.Count;
         int player0MindbugCount = state.Players[0].MindbugCount;
         int player1MindbugCount = state.Players[1].MindbugCount;
 
@@ -209,6 +211,8 @@ public class NetworkController : NetworkBehaviour
             pendingAttackCard,
             player0Life,
             player1Life,
+            player0DeckCount,
+            player1DeckCount,
             player0MindbugCount,
             player1MindbugCount,
             player1Hand.Length,
@@ -229,6 +233,8 @@ public class NetworkController : NetworkBehaviour
             pendingAttackCard,
             player1Life,
             player0Life,
+            player1DeckCount,
+            player0DeckCount,
             player1MindbugCount,
             player0MindbugCount,
             player0Hand.Length,
@@ -253,6 +259,8 @@ public class NetworkController : NetworkBehaviour
         CardNetworkState pendingAttackCard,
         int playerLife,
         int opponentLife,
+        int playerDeckCount,
+        int opponentDeckCount,
         int playerMindbugCount,
         int opponentMindbugCount,
         int opponentHandCount,
@@ -334,6 +342,8 @@ public class NetworkController : NetworkBehaviour
                 ExpectedPlayerID: expectedPlayerId,
                 localPlayerLife: playerLife,
                 opponentPlayerLife: opponentLife,
+                localPlayerDeckCount: playerDeckCount,
+                opponentPlayerDeckCount: opponentDeckCount,
                 localPlayerMindbugCount: playerMindbugCount,
                 opponentPlayerMindbugCount: opponentMindbugCount,
                 localPlayerDiscardCount: playerDiscard.Length,

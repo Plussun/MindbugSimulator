@@ -17,6 +17,10 @@ public class GameEngine
         State.CurrentPhase = GamePhase.WaitingForMainAction;
         SetRandomActivePlayer();
         SetExpectedPlayer(State.ActivePlayerID);
+        ShuffleDeck(State.ActivePlayerID);
+        ShuffleDeck(1 - State.ActivePlayerID);
+        Refill(State.ActivePlayerID);
+        Refill(1 - State.ActivePlayerID);
         Debug.Log("游戏开始，当前游戏阶段" + State.CurrentPhase);
     }
     public void SetRandomActivePlayer()
@@ -31,6 +35,21 @@ public class GameEngine
     {
         State.ExpectedPlayerID = playerID;
         Debug.Log("设置玩家" + playerID + "为等待决策的玩家");
+    }
+
+    public void SetPlayerDeck(int playerID, List<CardData> deck)
+    {
+        PlayerState player = State.Players[playerID];
+        player.Deck.Clear();
+        int instanceIDCounter = 0;
+        foreach (var cardData in deck)
+        {
+            instanceIDCounter++;
+            int thisInstanceID = (player.PlayerID + 1) * 1000 + instanceIDCounter; 
+            CardInstance cardInstance = new CardInstance(cardData,thisInstanceID);
+            player.Deck.Add(cardInstance);
+        }
+        Debug.Log("玩家" + playerID + "的牌库已设置");
     }
     public void SetPlayerHand(int playerID, List<CardData> hand)
     {
@@ -58,6 +77,54 @@ public class GameEngine
     {
         State.CurrentPhase = newPhase;
         Debug.Log("游戏阶段切换为" + State.CurrentPhase);
+    } 
+
+    public void Refill(int playerID)
+    {
+        PlayerState player = State.Players[playerID];
+        if(player.Hand.Count >= 5)
+        {
+            Debug.Log("玩家" + playerID + "的手牌已满，无需补充抽牌");
+            return;
+        }
+        int cardsToDraw = 5 - player.Hand.Count;
+        if(cardsToDraw > 0)
+        {
+            DrawCard(playerID, cardsToDraw);
+            Debug.Log("玩家" + playerID + "的手牌不足5张，补充抽牌至5张");
+        }
+    }
+
+    public void DrawCard(int playerID,int number)
+    {
+        PlayerState player = State.Players[playerID];
+        for(int i = 0; i < number; i++)
+        {
+            if(player.Deck.Count <= 0)
+            {
+                Debug.Log("玩家" + playerID + "的牌库为空，无法抽牌");
+                return;
+            }
+            CardInstance drawnCard = player.Deck[0];
+            player.Deck.RemoveAt(0);
+            player.Hand.Add(drawnCard);
+            Debug.Log("玩家" + playerID + "抽到卡牌" + drawnCard.CardData.CardName 
+                + "，当前手牌数量为" + player.Hand.Count);
+        }
+    }
+
+    public void ShuffleDeck(int playerID)
+    {
+        PlayerState player = State.Players[playerID];
+        //Fisher–Yates Shuffle方法，把当前索引的卡牌与后面随机一个索引的卡牌交换位置
+        for (int i = 0; i < player.Deck.Count; i++)
+        {
+            CardInstance temp = player.Deck[i];
+            int randomIndex = Random.Range(i, player.Deck.Count);
+            player.Deck[i] = player.Deck[randomIndex];
+            player.Deck[randomIndex] = temp;
+        }
+        Debug.Log("玩家" + playerID + "的牌库已洗牌");
     }
     public void PlayCard(int playerID, int cardInstanceID)
     {
@@ -84,6 +151,7 @@ public class GameEngine
             SetExpectedPlayer(1 - playerID); // 假设有两个玩家，切换到另一个玩家
             State.PendingCardInstance = cardToPlay;
             player.Hand.Remove(cardToPlay);
+            Refill(playerID); // 出牌后补充手牌
             Debug.Log("游戏阶段切换为" + State.CurrentPhase + 
                 "，等待玩家" + State.ExpectedPlayerID + "的Mindbug决策");
         }
