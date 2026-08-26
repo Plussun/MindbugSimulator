@@ -11,13 +11,17 @@ public class GameController : MonoBehaviour
     void Awake()
     {
         GameEngine = new GameEngine();
-        GameEngine.SetPlayerDeck(0, TestHand);
-        GameEngine.SetPlayerDeck(1, TestHand);
+        GameEngine.SetAllCards(GetRandomAllCards(48));
     }
 
-    // Update is called once per frame
-    void Update()
+    public List<CardData> GetRandomAllCards(int allCardsCount)
     {
-        
+        List<CardData> randomCards = new List<CardData>();
+        for (int i = 0; i < allCardsCount; i++)
+        {
+            int randomIndex = Random.Range(0, CardDatabase.Count);
+            randomCards.Add(CardDatabase[randomIndex]);
+        }
+        return randomCards;
     }
 }

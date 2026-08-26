@@ -15,8 +15,16 @@ public class GameEngine
     public void StartGame()
     {
         State.CurrentPhase = GamePhase.WaitingForMainAction;
+        State.PendingCardInstance = null;
+        State.PendingAttackCardInstance = null;
+        State.PendingBlockCardInstance = null;
+        
         SetRandomActivePlayer();
         SetExpectedPlayer(State.ActivePlayerID);
+
+        SetPlayerDeck(State.ActivePlayerID, State.AllCards, 10);
+        SetPlayerDeck(1 - State.ActivePlayerID, State.AllCards, 10);
+
         ShuffleDeck(State.ActivePlayerID);
         ShuffleDeck(1 - State.ActivePlayerID);
         Refill(State.ActivePlayerID);
@@ -37,19 +45,50 @@ public class GameEngine
         Debug.Log("设置玩家" + playerID + "为等待决策的玩家");
     }
 
-    public void SetPlayerDeck(int playerID, List<CardData> deck)
+    public void SetAllCards(List<CardData> allCards)
+    {
+        State.AllCards.Clear();
+        int instanceIDCounter = 0;
+        foreach (var cardData in allCards)
+        {
+            instanceIDCounter++;
+            int thisInstanceID = instanceIDCounter; // 全局唯一的卡牌实例ID
+            CardInstance cardInstance = new CardInstance(cardData, thisInstanceID);
+            State.AllCards.Add(cardInstance);
+        }
+
+        //对所有卡牌的总牌库进行洗牌
+        for (int i = 0; i < State.AllCards.Count; i++)
+        {
+            CardInstance temp = State.AllCards[i];
+            int randomIndex = Random.Range(i, State.AllCards.Count);
+            State.AllCards[i] = State.AllCards[randomIndex];
+            State.AllCards[randomIndex] = temp;
+        }
+        
+        Debug.Log("所有卡牌已设置，总数：" + State.AllCards.Count);
+    }
+
+    public void SetPlayerDeck(int playerID, List<CardInstance> AllCards,int deckCount)
     {
         PlayerState player = State.Players[playerID];
         player.Deck.Clear();
-        int instanceIDCounter = 0;
-        foreach (var cardData in deck)
+        for (int i = 0; i < deckCount; i++)
         {
-            instanceIDCounter++;
-            int thisInstanceID = (player.PlayerID + 1) * 1000 + instanceIDCounter; 
-            CardInstance cardInstance = new CardInstance(cardData,thisInstanceID);
-            player.Deck.Add(cardInstance);
+            
+            if (AllCards.Count > 0)
+            {
+                int randomIndex = Random.Range(0, AllCards.Count);
+                player.Deck.Add(AllCards[randomIndex]);
+                AllCards.RemoveAt(randomIndex);
+            }
+            else
+            {
+                Debug.LogWarning("卡牌数量不足，无法为玩家" + playerID + "设置完整的牌库");
+                break;
+            }
         }
-        Debug.Log("玩家" + playerID + "的牌库已设置");
+        
     }
     public void SetPlayerHand(int playerID, List<CardData> hand)
     {

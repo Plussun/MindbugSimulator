@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public class GameState
 {
     public GamePhase CurrentPhase;
+    public List<CardInstance> AllCards = new List<CardInstance>();
     public List<PlayerState> Players = new List<PlayerState>();
     public int ActivePlayerID;//当前回合的玩家
     public int ExpectedPlayerID;//等待玩家决定（使用bug或者抵挡）的玩家
