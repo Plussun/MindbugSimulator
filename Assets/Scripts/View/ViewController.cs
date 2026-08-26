@@ -14,17 +14,22 @@ public class ViewController : MonoBehaviour
     public Button NoBlockButton;
     public Button NoMindbugButton;
     public Button UseMindbugButton;
+    public Button AttackButton;
+    public Button BlockButton;
 
     public GameController gameController;
     public NetworkController networkController;
 
     private GamePhase currentPhase;
     private bool isLocalPlayerExpected;
+    private CardView selectedCard;
 
     // Start is called before the first frame update
     void Start()
     {
         NoBlockButton.onClick.AddListener(OnNoBlockButtonClicked);
+        AttackButton.onClick.AddListener(OnAttackButtonClicked);
+        BlockButton.onClick.AddListener(OnBlockButtonClicked);
     }
     public void RefreshView(
         int gamePhase,
@@ -50,6 +55,9 @@ public class ViewController : MonoBehaviour
     {
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
+
+        selectedCard = null;
+        AttackButton.gameObject.SetActive(false);
         
         RefreshPlayerPortrait(true, localPlayerLife, 
             localPlayerMindbugCount, isLocalPlayerExpected);
@@ -96,13 +104,13 @@ public class ViewController : MonoBehaviour
                 currentPhase == GamePhase.WaitingForMainAction &&
                 isLocalPlayerExpected)
             {
-                cardView.SetClickAction(networkController.PlayCardRequest);
+                cardView.SetClickAction(PlayCardDecision);
             }
             if(isLocalField &&
                 currentPhase == GamePhase.WaitingForMainAction &&
                 isLocalPlayerExpected)
             {
-                cardView.SetClickAction(networkController.AttackDecisionRequest);
+                cardView.SetClickAction(AttackDecision);
             }
             //如果是本方场上卡牌，且当前是本方阻挡决策阶段，则绑定阻挡事件
             if(isLocalField &&
@@ -251,10 +259,67 @@ public class ViewController : MonoBehaviour
             WinnerContainer.Find("Lose").gameObject.SetActive(true);
         }
     }
-
-    public void BlockDecision(int cardInstanceID)
+    public void PlayCardDecision(CardView cardView)
     {
-        networkController.BlockDecisionRequest(true, cardInstanceID);
+        networkController.PlayCardRequest(cardView.CardInstanceID);
+    }
+
+    public void AttackDecision(CardView cardView)
+    {
+        if(selectedCard == null)
+        {
+            selectedCard = cardView;
+            selectedCard.SetSelected(true);
+            AttackButton.gameObject.SetActive(true);
+        }
+        else
+        {
+            selectedCard.SetSelected(false);
+            selectedCard = null;
+            AttackButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnAttackButtonClicked()
+    {
+        if(selectedCard != null)
+        {
+            selectedCard.SetSelected(false);
+            //注意，这里需要先把selectedCard的待选设为false然后再发送网络请求
+            //因为在网络请求发送后，可能会触发UI刷新，导致selectedCard被销毁，从而无法设置选中状态
+            networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
+            selectedCard = null;
+            AttackButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void BlockDecision(CardView cardView)
+    {
+        if(selectedCard == null)
+        {
+            selectedCard = cardView;
+            selectedCard.SetSelected(true);
+            BlockButton.gameObject.SetActive(true);
+        }
+        else
+        {
+            selectedCard.SetSelected(false);
+            selectedCard = null;
+            BlockButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnBlockButtonClicked()
+    {
+        if(selectedCard != null)
+        {
+            selectedCard.SetSelected(false);
+            //注意，这里需要先把selectedCard的待选设为false然后再发送网络请求
+            //因为在网络请求发送后，可能会触发UI刷新，导致selectedCard被销毁，从而无法设置选中状态
+            networkController.BlockDecisionRequest(true, selectedCard.CardInstanceID);
+            selectedCard = null;
+            BlockButton.gameObject.SetActive(false);
+        }
     }
 
 

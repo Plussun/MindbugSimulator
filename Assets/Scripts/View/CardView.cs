@@ -12,9 +12,9 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     public TMP_Text CardPowerText;
     public int CardInstanceID;
 
-    private Action<int> clickAction;
+    private Action<CardView> clickAction;
 
-    public void SetClickAction(Action<int> action)
+    public void SetClickAction(Action<CardView> action)
     {
         clickAction = action;
     }
@@ -25,6 +25,18 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         CardPowerText.text = currentPower.ToString();
         CardInstanceID = cardInstanceID;
     }
+    public void SetSelected(bool isSelected)
+    {
+        // 这里可以添加选中状态的视觉反馈，比如改变边框颜色
+        if (isSelected)
+        {
+            transform.Find("Selected").gameObject.SetActive(true); // 假设有一个名为"Selected"的子对象用于显示选中状态
+        }
+        else
+        {
+            transform.Find("Selected").gameObject.SetActive(false); // 隐藏选中状态
+        }
+    }
     public void OnPointerClick(PointerEventData eventData)
     {
         if(clickAction == null)
@@ -32,6 +44,6 @@ public class CardView : MonoBehaviour, IPointerClickHandler
             return;
         }
         Debug.Log("Card clicked: " + CardInstanceID);
-        clickAction?.Invoke(CardInstanceID);
+        clickAction?.Invoke(this);
     }
 }
