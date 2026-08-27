@@ -442,29 +442,40 @@ public class GameEngine
     {
         PlayerState player = State.Players[playerID];
         CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
+        //处理坚韧关键词，检测其是否横置
+        if (card.HasKeyword(Keywords.Tough))
+        {
+            if (!card.IsExhausted)
+            {
+                card.IsExhausted = true;
+                return;
+            }
+        }
         if(card != null)
         {
             card.ClearTempEffects(); // 清除临时效果
             player.Field.Remove(card);
             player.DiscardPile.Add(card);
             Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
+            //TODO：触发阵亡事件
+            if(card.CardData.CardEffects != null)
+            {
+                foreach(var effect in card.CardData.CardEffects)
+                {
+                    if(effect.Trigger == EffectTrigger.OnDefeat)
+                    {
+                        effect.Resolve(this, playerID, card);
+                    }
+                }
+            }
+            
         }
         else
         {
             Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为" 
                 + cardInstanceID + "的卡牌");
         }
-        //TODO：触发阵亡事件
-        if(card != null && card.CardData.CardEffects != null)
-        {
-            foreach(var effect in card.CardData.CardEffects)
-            {
-                if(effect.Trigger == EffectTrigger.OnDefeat)
-                {
-                    effect.Resolve(this, playerID, card);
-                }
-            }
-        }
+        
         RefreshFieldEffect(); // 刷新场上效果
     }
 

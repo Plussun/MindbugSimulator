@@ -16,3 +16,6 @@ MonoBehaviour:
   CardDataID: 2
   Power: 2
   Description: this is bug 2.
+  CardKeywords: 4
+  CardEffects: []
+  CardFieldEffects: []

@@ -4056,14 +4056,35 @@ MonoBehaviour:
         CardData: {fileID: 0}
         CardInstanceID: 0
         CurrentPower: 0
+        BasePower: 0
+        TempPower: 0
+        CurrentKeywords: 0
+        BaseKeywords: 0
+        TempKeywords: 0
+        IsExhausted: 0
+        AttackCount: 0
       PendingAttackCardInstance:
         CardData: {fileID: 0}
         CardInstanceID: 0
         CurrentPower: 0
+        BasePower: 0
+        TempPower: 0
+        CurrentKeywords: 0
+        BaseKeywords: 0
+        TempKeywords: 0
+        IsExhausted: 0
+        AttackCount: 0
       PendingBlockCardInstance:
         CardData: {fileID: 0}
         CardInstanceID: 0
         CurrentPower: 0
+        BasePower: 0
+        TempPower: 0
+        CurrentKeywords: 0
+        BaseKeywords: 0
+        TempKeywords: 0
+        IsExhausted: 0
+        AttackCount: 0
   TestHand:
   - {fileID: 11400000, guid: c7f518523dab6f3989525948640dbd53, type: 2}
   - {fileID: 11400000, guid: 989f9ecc31095e4978af6ae7b0cce9b3, type: 2}

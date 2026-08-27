@@ -16,3 +16,6 @@ MonoBehaviour:
   CardDataID: 4
   Power: 8
   Description: a tiger
+  CardKeywords: 4
+  CardEffects: []
+  CardFieldEffects: []

@@ -4,5 +4,7 @@ public struct CardNetworkState : INetworkSerializeByMemcpy
     public int CardInstanceID;
     public int CardDataID;
     public int currentPower;
+
+    public bool isExhausted;
     
 }

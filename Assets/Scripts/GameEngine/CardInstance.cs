@@ -3,6 +3,7 @@ public class CardInstance
 {
     public CardData CardData;
     public int CardInstanceID;
+
     public int CurrentPower = 0;
     public int BasePower = 0;
     public int TempPower = 0;
@@ -10,6 +11,9 @@ public class CardInstance
     public Keywords CurrentKeywords = Keywords.None;
     public Keywords BaseKeywords = Keywords.None;
     public Keywords TempKeywords = Keywords.None;
+
+    public bool IsExhausted = false;//是否被横置
+    public int AttackCount = 0;//已经攻击次数
     public CardInstance(CardData cardData, int cardInstanceID)
     {
         CardData = cardData;
@@ -30,5 +34,10 @@ public class CardInstance
         TempPower = 0;
         TempKeywords = Keywords.None;
         UpdatePowerAndKeywords();
+    }
+
+    public bool HasKeyword(Keywords keyword)
+    {
+        return (CurrentKeywords & keyword) == keyword;
     }
 }

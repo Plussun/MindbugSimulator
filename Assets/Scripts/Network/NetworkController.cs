@@ -393,7 +393,8 @@ public class NetworkController : NetworkBehaviour
             {
                 CardInstanceID = cards[i].CardInstanceID,
                 CardDataID = cards[i].CardData.CardDataID,
-                currentPower = cards[i].CurrentPower
+                currentPower = cards[i].CurrentPower,
+                isExhausted = cards[i].IsExhausted
             };
         }
 

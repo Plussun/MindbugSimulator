@@ -19,11 +19,13 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         clickAction = action;
     }
 
-    public void UpdateCardView(string cardName, int currentPower, int cardInstanceID)
+    public void UpdateCardView(string cardName, int currentPower, int cardInstanceID, bool isExhausted)
     {
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
         CardInstanceID = cardInstanceID;
+        // 根据isExhausted更新卡牌的横置状态
+        transform.rotation = isExhausted ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;
     }
     public void SetSelected(bool isSelected)
     {
