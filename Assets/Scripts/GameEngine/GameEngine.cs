@@ -223,8 +223,7 @@ public class GameEngine
             State.Players[State.ExpectedPlayerID].MindbugCount-=1;
             Debug.Log("玩家" + playerID + "使用了Mindbug，卡牌" 
             + State.PendingCardInstance.CardData.CardName + "加入到玩家" + State.ExpectedPlayerID + "的场上");
-            ChangeGamePhase(GamePhase.WaitingForMainAction);
-            ChangeActivePlayer(State.ActivePlayerID); // 回合玩家不变
+            StartNextTurn(true); // 保持当前回合玩家不变，开始下一回合
   
         }
         else
@@ -233,8 +232,7 @@ public class GameEngine
             
             DeployCard(State.ActivePlayerID, State.PendingCardInstance);
 
-            ChangeGamePhase(GamePhase.WaitingForMainAction);
-            ChangeActivePlayer(1 - State.ActivePlayerID); // 切换为另一个
+            StartNextTurn(false); // 切换到另一个玩家
             Debug.Log("玩家" + playerID + "没有使用Mindbug");
         }
 
@@ -311,41 +309,53 @@ public class GameEngine
             {
                 State.PendingBlockCardInstance = blockCard;
                 //TODO：触发阻挡效果
-                
+
                 if(State.PendingBlockCardInstance.CurrentPower > State.PendingAttackCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，成功阻挡了攻击");
                     //阻挡成功，攻击卡牌被移除，阻挡卡牌不变
-                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingAttackCardInstance);
-                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingAttackCardInstance);
+                    DefeatCard(State.ActivePlayerID, State.PendingAttackCardInstance.CardInstanceID);
                 }
                 else if(State.PendingBlockCardInstance.CurrentPower == State.PendingAttackCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，阻挡与攻击卡牌同等强度，双方都被移除");
-                    State.Players[State.ActivePlayerID].Field.Remove(State.PendingAttackCardInstance);
-                    State.Players[State.ExpectedPlayerID].Field.Remove(State.PendingBlockCardInstance);
-                    State.Players[State.ActivePlayerID].DiscardPile.Add(State.PendingAttackCardInstance);
-                    State.Players[State.ExpectedPlayerID].DiscardPile.Add(State.PendingBlockCardInstance);
+                    DefeatCard(State.ActivePlayerID, State.PendingAttackCardInstance.CardInstanceID);
+                    DefeatCard(State.ExpectedPlayerID, State.PendingBlockCardInstance.CardInstanceID);
                 }
                 else
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
                         + blockCard.CardData.CardName + "，阻挡失败，阻挡卡牌被移除");
-                    State.Players[State.ExpectedPlayerID].Field.Remove(State.PendingBlockCardInstance);
-                    State.Players[State.ExpectedPlayerID].DiscardPile.Add(State.PendingBlockCardInstance);
+                    DefeatCard(State.ExpectedPlayerID, State.PendingBlockCardInstance.CardInstanceID);
                 }
             }
         }
 
 
+        StartNextTurn(false); // 切换到另一个玩家
+    }
+
+    public void StartNextTurn(bool keepActivePlayer)
+    {
+        if(State.CurrentPhase == GamePhase.GameOver)
+        {
+            Debug.Log("游戏已结束，无法开始下一回合");
+            return;
+        }
+        if (!keepActivePlayer)
+        {
+            State.ActivePlayerID = 1 - State.ActivePlayerID; // 切换为另一个玩家
+        }
+
+        State.ExpectedPlayerID = State.ActivePlayerID; // 设置等待决策的玩家为当前回合玩家
         ChangeGamePhase(GamePhase.WaitingForMainAction);
-        ChangeActivePlayer(1 - State.ActivePlayerID); // 切换为另一个玩家
+
+        State.PendingCardInstance = null;
         State.PendingAttackCardInstance = null;
         State.PendingBlockCardInstance = null;
     }
-
     //玩家失去生命，返回true表示玩家死亡游戏结束，返回false表示游戏继续
     public bool LoseLife(int playerID, int amount)
     {
