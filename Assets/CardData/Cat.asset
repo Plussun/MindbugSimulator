@@ -16,3 +16,5 @@ MonoBehaviour:
   CardDataID: 1
   Power: 1
   Description: this is card 1.
+  CardKeywords: 0
+  CardEffects: []

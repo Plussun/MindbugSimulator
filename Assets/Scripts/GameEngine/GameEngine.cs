@@ -254,10 +254,26 @@ public class GameEngine
         }
         State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
             card => card.CardInstanceID == cardInstanceID);
-        //TODO: 触发攻击效果
-
-        if(State.PendingAttackCardInstance == null)
+        
+        if(State.PendingAttackCardInstance != null)
         {
+            Debug.Log("玩家" + playerID + "选择了卡牌" 
+                + State.PendingAttackCardInstance.CardData.CardName + "进行攻击");
+            //TODO: 触发攻击效果
+            if(State.PendingAttackCardInstance.CardData.CardEffects != null)
+            {
+                foreach(var effect in State.PendingAttackCardInstance.CardData.CardEffects)
+                {
+                    if(effect.Trigger == EffectTrigger.OnAttack)
+                    {
+                        effect.Resolve(this, playerID, State.PendingAttackCardInstance);
+                    }
+                }
+            }
+        }
+        else
+        {
+            //如果没有找到对应的卡牌实例，则输出错误信息
             Debug.Log("玩家" + playerID + "的场地中没有ID为"
                  + cardInstanceID + "的卡牌");
             return;
@@ -402,6 +418,16 @@ public class GameEngine
             Debug.Log("玩家" + playerID + "没有要部署的卡牌");
         }
         //TODO：触发部署事件
+        if(card != null && card.CardData.CardEffects != null)
+        {
+            foreach(var effect in card.CardData.CardEffects)
+            {
+                if(effect.Trigger == EffectTrigger.OnDeploy)
+                {
+                    effect.Resolve(this, playerID, card);
+                }
+            }
+        }
     }
     public void DefeatCard(int playerID, int cardInstanceID)
     {
@@ -419,6 +445,16 @@ public class GameEngine
                 + cardInstanceID + "的卡牌");
         }
         //TODO：触发阵亡事件
+        if(card != null && card.CardData.CardEffects != null)
+        {
+            foreach(var effect in card.CardData.CardEffects)
+            {
+                if(effect.Trigger == EffectTrigger.OnDefeat)
+                {
+                    effect.Resolve(this, playerID, card);
+                }
+            }
+        }
     }
 
     public void DiscardCard(int playerID, int cardInstanceID)
