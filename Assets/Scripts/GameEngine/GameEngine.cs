@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [System.Serializable]
@@ -217,7 +218,8 @@ public class GameEngine
         {
             // 假设使用Mindbug
         
-            State.Players[State.ExpectedPlayerID].Field.Add(State.PendingCardInstance);
+            DeployCard(State.ExpectedPlayerID, State.PendingCardInstance);
+            
             State.Players[State.ExpectedPlayerID].MindbugCount-=1;
             Debug.Log("玩家" + playerID + "使用了Mindbug，卡牌" 
             + State.PendingCardInstance.CardData.CardName + "加入到玩家" + State.ExpectedPlayerID + "的场上");
@@ -229,7 +231,8 @@ public class GameEngine
         {
             //如果没有使用mindbug，则将卡牌加入到当前回合玩家的场上,切换另一个玩家
             
-            State.Players[State.ActivePlayerID].Field.Add(State.PendingCardInstance);
+            DeployCard(State.ActivePlayerID, State.PendingCardInstance);
+
             ChangeGamePhase(GamePhase.WaitingForMainAction);
             ChangeActivePlayer(1 - State.ActivePlayerID); // 切换为另一个
             Debug.Log("玩家" + playerID + "没有使用Mindbug");
@@ -253,6 +256,8 @@ public class GameEngine
         }
         State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
             card => card.CardInstanceID == cardInstanceID);
+        //TODO: 触发攻击效果
+
         if(State.PendingAttackCardInstance == null)
         {
             Debug.Log("玩家" + playerID + "的场地中没有ID为"
@@ -305,6 +310,8 @@ public class GameEngine
             else
             {
                 State.PendingBlockCardInstance = blockCard;
+                //TODO：触发阻挡效果
+                
                 if(State.PendingBlockCardInstance.CurrentPower > State.PendingAttackCardInstance.CurrentPower)
                 {
                     Debug.Log("玩家" + playerID + "使用了卡牌" 
@@ -354,4 +361,74 @@ public class GameEngine
         }
         return false; // 游戏继续
     }
+
+    public void ChangePower(int playerID,int cardInstanceID,int amount)
+    {
+        PlayerState player = State.Players[playerID];
+        CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
+        if(card != null)
+        {
+            card.CurrentPower += amount;
+            Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName 
+                + "的力量值变化为" + card.CurrentPower);
+        }
+        else
+        {
+            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为" 
+                + cardInstanceID + "的卡牌");
+        }
+    }
+
+    public void DeployCard(int playerID, CardInstance card)
+    {
+        PlayerState player = State.Players[playerID];
+        if(card != null)
+        {
+            player.Field.Add(card);
+            Debug.Log("玩家" + playerID + "部署了卡牌" + card.CardData.CardName);
+        }
+        else
+        {
+            Debug.Log("玩家" + playerID + "没有要部署的卡牌");
+        }
+        //TODO：触发部署事件
+    }
+    public void DefeatCard(int playerID, int cardInstanceID)
+    {
+        PlayerState player = State.Players[playerID];
+        CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
+        if(card != null)
+        {
+            player.Field.Remove(card);
+            player.DiscardPile.Add(card);
+            Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
+        }
+        else
+        {
+            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为" 
+                + cardInstanceID + "的卡牌");
+        }
+        //TODO：触发阵亡事件
+    }
+
+    public void DiscardCard(int playerID, int cardInstanceID)
+    {
+        PlayerState player = State.Players[playerID];
+        CardInstance card = player.Hand.Find(card => card.CardInstanceID == cardInstanceID);
+        if(card != null)
+        {
+            player.Hand.Remove(card);
+            player.DiscardPile.Add(card);
+            Debug.Log("玩家" + playerID + "的手牌" + card.CardData.CardName + "被弃置，移至弃牌堆");
+        }
+        else
+        {
+            Debug.Log("玩家" + playerID + "没有找到手牌实例ID为" 
+                + cardInstanceID + "的卡牌");
+        }
+    }
+
+
 }
+
+
