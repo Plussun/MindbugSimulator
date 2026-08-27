@@ -95,7 +95,7 @@ public class ViewController : MonoBehaviour
             CardView cardView = cardViewObj.GetComponent<CardView>();
             // 创建CardInstance对象
             CardData cardData = GetCardDataByID(cards[i].CardDataID);
-            cardView.UpdateCardView(cardData.CardName, cards[i].currentPower, cards[i].CardInstanceID,cards[i].isExhausted);
+            cardView.UpdateCardView(cardData.CardName, cardData.Description, cards[i].currentPower, cards[i].CardInstanceID,cards[i].isExhausted);
 
             bool isLocalHand = (playerTransform == LocalPlayer && handOrField == "Hand");
             bool isLocalField = (playerTransform == LocalPlayer && handOrField == "Field");
@@ -151,7 +151,7 @@ public class ViewController : MonoBehaviour
             GameObject cardViewObj = Instantiate(CardViewPrefab, handContainer);
             CardView cardView = cardViewObj.GetComponent<CardView>();
             // 设置卡牌为背面显示
-            cardView.UpdateCardView("Back", 0, -1, false); // 使用-1表示未知的CardInstanceID
+            cardView.UpdateCardView("Back", "", 0, -1, false); // 使用-1表示未知的CardInstanceID
             cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
         }
@@ -171,7 +171,8 @@ public class ViewController : MonoBehaviour
         }
         GameObject cardViewObj = Instantiate(CardViewPrefab, PendingCardsContainer);
         CardView cardView = cardViewObj.GetComponent<CardView>();
-        cardView.UpdateCardView(GetCardDataByID(pendingCard.CardDataID).CardName, 
+        cardView.UpdateCardView(GetCardDataByID(pendingCard.CardDataID).CardName,
+            GetCardDataByID(pendingCard.CardDataID).Description,
             pendingCard.currentPower, pendingCard.CardInstanceID, pendingCard.isExhausted);
         cardView.transform.localPosition = new Vector3(0, 0, 0); // 调整卡牌位置
         cardView.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // 确保卡牌缩放为0.5

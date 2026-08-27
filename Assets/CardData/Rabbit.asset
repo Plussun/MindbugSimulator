@@ -15,7 +15,8 @@ MonoBehaviour:
   CardName: Rabbit
   CardDataID: 3
   Power: 1
-  Description: a rabbit
-  CardKeywords: 0
+  Description: "\u654F\u6377"
+  CardKeywords: 1
   CardEffects:
   - {fileID: 11400000, guid: dbaa1ab3a98cbb095abc214fff82f444, type: 2}
+  CardFieldEffects: []

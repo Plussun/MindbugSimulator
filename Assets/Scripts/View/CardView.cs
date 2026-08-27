@@ -10,6 +10,7 @@ public class CardView : MonoBehaviour, IPointerClickHandler
 {
     public TMP_Text CardNameText;
     public TMP_Text CardPowerText;
+    public TMP_Text CardDescribeText;
     public int CardInstanceID;
 
     private Action<CardView> clickAction;
@@ -19,10 +20,11 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         clickAction = action;
     }
 
-    public void UpdateCardView(string cardName, int currentPower, int cardInstanceID, bool isExhausted)
+    public void UpdateCardView(string cardName,string cardDescribe, int currentPower, int cardInstanceID, bool isExhausted)
     {
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
+        CardDescribeText.text = cardDescribe;
         CardInstanceID = cardInstanceID;
         // 根据isExhausted更新卡牌的横置状态
         transform.rotation = isExhausted ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;

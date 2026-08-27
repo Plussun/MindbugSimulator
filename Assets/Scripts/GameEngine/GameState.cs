@@ -14,6 +14,7 @@ public class GameState
     public CardInstance PendingCardInstance; // 当前正在等待Mindbug决策的卡牌实例
     public CardInstance PendingAttackCardInstance; // 当前正在Attack决策的攻击卡牌实例
     public CardInstance PendingBlockCardInstance; // 当前正在Block决策的卡牌实例
+    public CardInstance PendingHunterTargetCardInstance; // 当前正在Hunter决策的目标卡牌实例
 
     public GameState()
     {

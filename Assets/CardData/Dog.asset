@@ -15,7 +15,7 @@ MonoBehaviour:
   CardName: Dog
   CardDataID: 2
   Power: 2
-  Description: this is bug 2.
+  Description: "\u575A\u97E7"
   CardKeywords: 4
   CardEffects: []
   CardFieldEffects: []

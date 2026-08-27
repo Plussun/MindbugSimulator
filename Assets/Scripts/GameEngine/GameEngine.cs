@@ -259,7 +259,7 @@ public class GameEngine
         {
             Debug.Log("玩家" + playerID + "选择了卡牌" 
                 + State.PendingAttackCardInstance.CardData.CardName + "进行攻击");
-            //TODO: 触发攻击效果
+            //触发攻击效果
             if(State.PendingAttackCardInstance.CardData.CardEffects != null)
             {
                 foreach(var effect in State.PendingAttackCardInstance.CardData.CardEffects)
@@ -294,9 +294,10 @@ public class GameEngine
             Debug.Log("玩家" + playerID + "不是当前等待决策的玩家，无法进行阻挡决策");
             return;
         }
-
+        //如果不适用阻挡
         if (!useBlock)
         {
+            //死了
             if(LoseLife(State.ExpectedPlayerID, 1))
             {
                 Debug.Log("玩家" + State.ExpectedPlayerID + 
@@ -305,12 +306,14 @@ public class GameEngine
                 State.PendingBlockCardInstance = null;
                 return;
             }
+            //没死
             else
             {
                 Debug.Log("玩家" + State.ExpectedPlayerID + "没有使用阻挡，生命值减少1，当前生命值为" 
                     + State.Players[State.ExpectedPlayerID].Life);
             }
         }
+        //如果使用了阻挡
         else
         {
             CardInstance blockCard = State.Players[State.ExpectedPlayerID].Field.Find(
@@ -324,7 +327,13 @@ public class GameEngine
             else
             {
                 State.PendingBlockCardInstance = blockCard;
-                //TODO：触发阻挡效果
+                //判断是否可以阻挡
+                if(!CanBlock(State.PendingAttackCardInstance, State.PendingBlockCardInstance, State.PendingHunterTargetCardInstance))
+                {
+                    Debug.Log("非法的阻挡对象");
+                    return;
+                }
+                //触发阻挡效果
                 foreach(var effect in State.PendingBlockCardInstance.CardData.CardEffects)
                 {
                     if(effect.Trigger == EffectTrigger.OnBlock)
@@ -333,31 +342,80 @@ public class GameEngine
                     }
                 }
 
-                if(State.PendingBlockCardInstance.CurrentPower > State.PendingAttackCardInstance.CurrentPower)
-                {
-                    Debug.Log("玩家" + playerID + "使用了卡牌" 
-                        + blockCard.CardData.CardName + "，成功阻挡了攻击");
-                    //阻挡成功，攻击卡牌被移除，阻挡卡牌不变
-                    DefeatCard(State.ActivePlayerID, State.PendingAttackCardInstance.CardInstanceID);
-                }
-                else if(State.PendingBlockCardInstance.CurrentPower == State.PendingAttackCardInstance.CurrentPower)
-                {
-                    Debug.Log("玩家" + playerID + "使用了卡牌" 
-                        + blockCard.CardData.CardName + "，阻挡与攻击卡牌同等强度，双方都被移除");
-                    DefeatCard(State.ActivePlayerID, State.PendingAttackCardInstance.CardInstanceID);
-                    DefeatCard(State.ExpectedPlayerID, State.PendingBlockCardInstance.CardInstanceID);
-                }
-                else
-                {
-                    Debug.Log("玩家" + playerID + "使用了卡牌" 
-                        + blockCard.CardData.CardName + "，阻挡失败，阻挡卡牌被移除");
-                    DefeatCard(State.ExpectedPlayerID, State.PendingBlockCardInstance.CardInstanceID);
-                }
+                ResolveCombat(State.PendingAttackCardInstance, State.PendingBlockCardInstance);
             }
         }
 
 
         StartNextTurn(false); // 切换到另一个玩家
+    }
+
+    public bool CanBlock(CardInstance attackCard, CardInstance blockCard, CardInstance targetCard = null)
+    {
+        // 检查卡牌是否是敏捷，是则只能被敏捷卡牌阻挡
+        if (attackCard.HasKeyword(Keywords.Sneaky))
+        {
+            return blockCard.HasKeyword(Keywords.Sneaky);
+        }
+
+        // 检查卡牌是否是“狩猎”，是则只能被“狩猎”指定的卡牌阻挡
+        if(attackCard.HasKeyword(Keywords.Hunter)){
+            if(targetCard != null && blockCard != targetCard)
+            {
+                return false; // 阻挡卡牌不是指定的目标卡牌，无法阻挡
+            }
+        }
+
+        return true; // 默认情况下可以阻挡
+    }
+
+    public void ResolveCombat(CardInstance attackCard, CardInstance blockCard)
+    {
+        if (blockCard == null)
+        {
+            // 没有阻挡卡牌，攻击卡牌直接造成伤害
+            LoseLife(State.ExpectedPlayerID, 1);
+            Debug.Log("玩家" + State.ExpectedPlayerID + "没有阻挡，生命值减少1");
+        }
+        else
+        {
+            // 有阻挡卡牌，比较力量值
+            if (blockCard.CurrentPower > attackCard.CurrentPower)
+            {
+                // 阻挡成功，攻击卡牌被移除，阻挡卡牌不变
+                DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
+                //如果攻击卡牌有剧毒关键词，则阻挡卡牌还是要死亡
+                if(attackCard.HasKeyword(Keywords.Poisonous))
+                {
+                    DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                    Debug.Log("玩家" + State.ExpectedPlayerID + "的阻挡卡牌" 
+                        + blockCard.CardData.CardName + "被剧毒效果移除");
+                    return;
+                }
+                Debug.Log("玩家" + State.ExpectedPlayerID + "成功阻挡了攻击");
+            }
+            else if (blockCard.CurrentPower == attackCard.CurrentPower)
+            {
+                // 双方力量值相等，双方都被移除
+                DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
+                DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                Debug.Log("双方力量值相等，双方都被移除");
+            }
+            else
+            {
+                // 阻挡失败，阻挡卡牌被移除
+                DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                Debug.Log("玩家" + State.ExpectedPlayerID + "阻挡失败，阻挡卡牌被移除");
+                //如果阻挡卡牌有剧毒关键词，则攻击卡牌还是要死亡
+                if(blockCard.HasKeyword(Keywords.Poisonous))
+                {
+                    DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
+                    Debug.Log("玩家" + State.ActivePlayerID + "的攻击卡牌" 
+                        + attackCard.CardData.CardName + "被剧毒效果移除");
+                    return;
+                }
+            }
+        }
     }
 
     public void StartNextTurn(bool keepActivePlayer)
@@ -535,6 +593,7 @@ public class GameEngine
             }
         }
     }
+
 
 }
 

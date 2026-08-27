@@ -15,7 +15,7 @@ MonoBehaviour:
   CardName: Tiger
   CardDataID: 4
   Power: 8
-  Description: a tiger
-  CardKeywords: 4
+  Description: "\u730E\u6740"
+  CardKeywords: 16
   CardEffects: []
   CardFieldEffects: []
