@@ -11,6 +11,7 @@ public class CardData:ScriptableObject
     public Keywords CardKeywords;
 
     public List<CardEffect> CardEffects = new List<CardEffect>();
+    public List<CardFieldEffect> CardFieldEffects = new List<CardFieldEffect>();
 }
 
 // Flags 枚举让一张卡可以同时拥有多个关键词。

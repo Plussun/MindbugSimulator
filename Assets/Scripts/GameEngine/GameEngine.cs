@@ -325,6 +325,13 @@ public class GameEngine
             {
                 State.PendingBlockCardInstance = blockCard;
                 //TODO：触发阻挡效果
+                foreach(var effect in State.PendingBlockCardInstance.CardData.CardEffects)
+                {
+                    if(effect.Trigger == EffectTrigger.OnBlock)
+                    {
+                        effect.Resolve(this, playerID, State.PendingBlockCardInstance);
+                    }
+                }
 
                 if(State.PendingBlockCardInstance.CurrentPower > State.PendingAttackCardInstance.CurrentPower)
                 {
@@ -388,13 +395,14 @@ public class GameEngine
         return false; // 游戏继续
     }
 
-    public void ChangePower(int playerID,int cardInstanceID,int amount)
+    public void ChangeBasePower(int playerID,int cardInstanceID,int amount)
     {
         PlayerState player = State.Players[playerID];
         CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
         if(card != null)
         {
-            card.CurrentPower += amount;
+            card.BasePower += amount;
+            card.UpdatePowerAndKeywords();
             Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName 
                 + "的力量值变化为" + card.CurrentPower);
         }
@@ -428,6 +436,7 @@ public class GameEngine
                 }
             }
         }
+        RefreshFieldEffect(); // 刷新场上效果
     }
     public void DefeatCard(int playerID, int cardInstanceID)
     {
@@ -435,6 +444,7 @@ public class GameEngine
         CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
         if(card != null)
         {
+            card.ClearTempEffects(); // 清除临时效果
             player.Field.Remove(card);
             player.DiscardPile.Add(card);
             Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
@@ -455,6 +465,7 @@ public class GameEngine
                 }
             }
         }
+        RefreshFieldEffect(); // 刷新场上效果
     }
 
     public void DiscardCard(int playerID, int cardInstanceID)
@@ -474,6 +485,45 @@ public class GameEngine
         }
     }
 
+    public void ClearAllOnFieldEffect()
+    {
+        foreach(var player in State.Players)
+        {
+            foreach(var card in player.Field)
+            {
+                card.ClearTempEffects();
+            }
+        }
+    }
+    public void RefreshFieldEffect()
+    {
+        ClearAllOnFieldEffect();
+        foreach(var player in State.Players)
+        {
+            foreach(var card in player.Field)
+            {
+                if(card.CardData.CardFieldEffects != null)
+                {
+                    foreach(var fieldEffect in card.CardData.CardFieldEffects)
+                    {
+                        fieldEffect.Resolve(this, player.PlayerID, card);
+                    }
+                }
+            }
+        }
+        UpdateAllFieldCardPowerAndKeywords();
+    }
+
+    public void UpdateAllFieldCardPowerAndKeywords()
+    {
+        foreach(var player in State.Players)
+        {
+            foreach(var card in player.Field)
+            {
+                card.UpdatePowerAndKeywords();
+            }
+        }
+    }
 
 }
 

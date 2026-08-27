@@ -17,7 +17,6 @@ public abstract class CardEffect:ScriptableObject
 public enum EffectTrigger
 {
     OnDeploy,//当卡牌被打出时触发
-    OnField,//当卡牌在场上时触发
     OnAttack,//当卡牌发动攻击时触发
     OnBlock,//当卡牌阻挡时触发
     OnDefeat,//当卡牌被击败时触发

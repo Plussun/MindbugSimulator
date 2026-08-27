@@ -9,14 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
-  m_Name: Cat
+  m_Script: {fileID: 11500000, guid: 6854640cba3768ddaaf8226964d9974f, type: 3}
+  m_Name: Add2PowerToAllFriend
   m_EditorClassIdentifier: 
-  CardName: Cat
-  CardDataID: 1
-  Power: 1
-  Description: this is card 1.
-  CardKeywords: 0
-  CardEffects: []
-  CardFieldEffects:
-  - {fileID: 11400000, guid: b9e7c685045cca60ba5aad0bc3b7a733, type: 2}
+  Trigger: 1
+  PowerToAdd: 2
