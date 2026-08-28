@@ -35,7 +35,7 @@ public class TestGameEngine : MonoBehaviour
                 break;
             case string s when s.StartsWith("attack"):
                 string attackCardID = s.Substring(6).Trim();
-                NetworkController.AttackDecisionRequest(int.Parse(attackCardID));
+                NetworkController.AttackDecisionRequest(int.Parse(attackCardID),-1);
                 break;
             case "noblock":
                 NetworkController.BlockDecisionRequest(false, 0);

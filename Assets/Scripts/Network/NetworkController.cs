@@ -96,20 +96,20 @@ public class NetworkController : NetworkBehaviour
     }
 
     //攻击请求
-    public void AttackDecisionRequest(int cardInstanceId)
+    public void AttackDecisionRequest(int cardInstanceId, int targetCardInstanceId)
     {
-        AttackDecisionServerRpc(cardInstanceId);
+        AttackDecisionServerRpc(cardInstanceId, targetCardInstanceId);
     }
     [ServerRpc(RequireOwnership = false)]
-    private void AttackDecisionServerRpc(int cardInstanceId,
+    private void AttackDecisionServerRpc(int cardInstanceId, int targetCardInstanceId,
         ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
         int playerId = GetPlayerIdByClientId(clientId);
-        GameController.GameEngine.AttackDecision(playerId, cardInstanceId);
+        GameController.GameEngine.AttackDecision(playerId, cardInstanceId, targetCardInstanceId);
         SyncState(); // 在服务器端处理完请求后，同步状态到客户端
         Debug.Log("玩家" + playerId + "请求攻击，卡牌实例ID为" 
-            + cardInstanceId);
+            + cardInstanceId + "，目标卡牌实例ID为" + targetCardInstanceId);
     }
 
     public void BlockDecisionRequest(bool useBlock,int blockCardInstanceId)
@@ -138,38 +138,15 @@ public class NetworkController : NetworkBehaviour
         int winnerPlayerID = state.WinnerPlayerID;
         int activePlayerId = state.ActivePlayerID;
         int expectedPlayerId = state.ExpectedPlayerID;
+
         CardNetworkState pendingCard = 
-            new CardNetworkState
-            {
-                CardInstanceID = -1,
-                CardDataID = 0,
-                currentPower = 0
-            };
-        if(state.PendingCardInstance != null)
-        {
-            pendingCard = new CardNetworkState
-            {
-                CardInstanceID = state.PendingCardInstance.CardInstanceID,
-                CardDataID = state.PendingCardInstance.CardData.CardDataID,
-                currentPower = state.PendingCardInstance.CurrentPower
-            };
-        }
-        CardNetworkState pendingAttackCard = 
-            new CardNetworkState
-            {
-                CardInstanceID = -1,
-                CardDataID = 0,
-                currentPower = 0
-            };
-        if(state.PendingAttackCardInstance != null)
-        {
-            pendingAttackCard = new CardNetworkState
-            {
-                CardInstanceID = state.PendingAttackCardInstance.CardInstanceID,
-                CardDataID = state.PendingAttackCardInstance.CardData.CardDataID,
-                currentPower = state.PendingAttackCardInstance.CurrentPower
-            };
-        }
+            GetCardNetworkStateByCardInstance(state.PendingCardInstance);
+        CardNetworkState pendingAttackCard =
+            GetCardNetworkStateByCardInstance(state.PendingAttackCardInstance);
+        CardNetworkState pendingTargetCard =
+            GetCardNetworkStateByCardInstance(state.PendingHunterTargetCardInstance);
+
+        
 
         CardNetworkState[] player0Hand = GetCardNetworkStates(state.Players[0].Hand);
         CardNetworkState[] player0Field = GetCardNetworkStates(state.Players[0].Field);
@@ -209,6 +186,7 @@ public class NetworkController : NetworkBehaviour
             0,
             pendingCard,
             pendingAttackCard,
+            pendingTargetCard,
             player0Life,
             player1Life,
             player0DeckCount,
@@ -231,6 +209,7 @@ public class NetworkController : NetworkBehaviour
             1,
             pendingCard,
             pendingAttackCard,
+            pendingTargetCard,
             player1Life,
             player0Life,
             player1DeckCount,
@@ -257,6 +236,7 @@ public class NetworkController : NetworkBehaviour
         int playerId,
         CardNetworkState pendingCard,
         CardNetworkState pendingAttackCard,
+        CardNetworkState pendingTargetCard,
         int playerLife,
         int opponentLife,
         int playerDeckCount,
@@ -353,7 +333,8 @@ public class NetworkController : NetworkBehaviour
                 opponentPlayerField: opponentField,
                 opponentHandCount: opponentHandCount,
                 pendingCard: pendingCard,
-                pendingAttack: pendingAttackCard
+                pendingAttack: pendingAttackCard,
+                pendingTarget: pendingTargetCard
             );
     }
 
@@ -394,7 +375,8 @@ public class NetworkController : NetworkBehaviour
                 CardInstanceID = cards[i].CardInstanceID,
                 CardDataID = cards[i].CardData.CardDataID,
                 currentPower = cards[i].CurrentPower,
-                isExhausted = cards[i].IsExhausted
+                isExhausted = cards[i].IsExhausted,
+                keywords = (int)cards[i].CurrentKeywords
             };
         }
 
@@ -422,6 +404,30 @@ public class NetworkController : NetworkBehaviour
                 + "/P" + card.currentPower + "]";
         }
         return string.Join(" ｜ ", cardTexts);
+    }
+
+    private CardNetworkState GetCardNetworkStateByCardInstance(CardInstance cardInstance)
+    {
+        if (cardInstance == null)
+        {
+            return new CardNetworkState
+            {
+                CardInstanceID = -1,
+                CardDataID = 0,
+                currentPower = 0,
+                isExhausted = false,
+                keywords = 0
+            };
+        }
+
+        return new CardNetworkState
+        {
+            CardInstanceID = cardInstance.CardInstanceID,
+            CardDataID = cardInstance.CardData.CardDataID,
+            currentPower = cardInstance.CurrentPower,
+            isExhausted = cardInstance.IsExhausted,
+            keywords = (int)cardInstance.CurrentKeywords
+        };
     }
         
     

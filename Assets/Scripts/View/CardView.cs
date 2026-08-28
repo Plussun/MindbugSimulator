@@ -12,6 +12,7 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     public TMP_Text CardPowerText;
     public TMP_Text CardDescribeText;
     public int CardInstanceID;
+    public Keywords CurrentKeywords; // 添加一个字段来存储当前的关键词
 
     private Action<CardView> clickAction;
 
@@ -20,10 +21,16 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         clickAction = action;
     }
 
-    public void UpdateCardView(string cardName,string cardDescribe, int currentPower, int cardInstanceID, bool isExhausted)
+    public void UpdateCardView(string cardName,
+        string cardDescribe, 
+        int currentPower, 
+        int cardInstanceID, 
+        int currentKeywords,
+        bool isExhausted)
     {
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
+        CurrentKeywords = (Keywords)currentKeywords;
         CardDescribeText.text = cardDescribe;
         CardInstanceID = cardInstanceID;
         // 根据isExhausted更新卡牌的横置状态
@@ -39,6 +46,18 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         else
         {
             transform.Find("Selected").gameObject.SetActive(false); // 隐藏选中状态
+        }
+    }
+    public void SetAimed(bool isAimed)
+    {
+        // 这里可以添加瞄准状态的视觉反馈，比如改变边框颜色
+        if (isAimed)
+        {
+            transform.Find("Aimed").gameObject.SetActive(true); // 假设有一个名为"Aimed"的子对象用于显示瞄准状态
+        }
+        else
+        {
+            transform.Find("Aimed").gameObject.SetActive(false); // 隐藏瞄准状态
         }
     }
     public void OnPointerClick(PointerEventData eventData)

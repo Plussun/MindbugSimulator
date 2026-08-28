@@ -240,7 +240,7 @@ public class GameEngine
         State.PendingCardInstance = null;
     }
 
-    public void AttackDecision(int playerID, int cardInstanceID)
+    public void AttackDecision(int playerID, int cardInstanceID, int targetCardInstanceID)
     {
         if(State.CurrentPhase != GamePhase.WaitingForMainAction)
         {
@@ -257,6 +257,19 @@ public class GameEngine
         
         if(State.PendingAttackCardInstance != null)
         {
+            //如果攻击卡牌有hunter关键词且存在目标卡牌
+            if( State.PendingAttackCardInstance.HasKeyword(Keywords.Hunter) &&
+                targetCardInstanceID >= 0)
+            {
+                State.PendingHunterTargetCardInstance = State.Players[1 - State.ActivePlayerID].Field.Find(
+                    card => card.CardInstanceID == targetCardInstanceID);
+                if(State.PendingHunterTargetCardInstance != null)
+                {
+                    Debug.Log("玩家" + playerID + "选择了卡牌" 
+                        + State.PendingAttackCardInstance.CardData.CardName + "进行攻击，目标卡牌为" 
+                        + State.PendingHunterTargetCardInstance.CardData.CardName);
+                }
+            }
             Debug.Log("玩家" + playerID + "选择了卡牌" 
                 + State.PendingAttackCardInstance.CardData.CardName + "进行攻击");
             //触发攻击效果
@@ -297,6 +310,11 @@ public class GameEngine
         //如果不适用阻挡
         if (!useBlock)
         {
+            if (State.PendingHunterTargetCardInstance != null)
+            {
+                Debug.Log("由于有被狩猎目标，不允许不阻挡");
+                return;
+            }
             //死了
             if(LoseLife(State.ExpectedPlayerID, 1))
             {
@@ -304,6 +322,7 @@ public class GameEngine
                     "没有使用阻挡，生命值减少1，当前生命值为0，游戏结束");
                 State.PendingAttackCardInstance = null;
                 State.PendingBlockCardInstance = null;
+                State.PendingHunterTargetCardInstance = null;
                 return;
             }
             //没死
@@ -355,7 +374,10 @@ public class GameEngine
         // 检查卡牌是否是敏捷，是则只能被敏捷卡牌阻挡
         if (attackCard.HasKeyword(Keywords.Sneaky))
         {
-            return blockCard.HasKeyword(Keywords.Sneaky);
+            if(!blockCard.HasKeyword(Keywords.Sneaky))
+            {
+                return false; // 阻挡卡牌不是敏捷卡牌，无法阻挡敏捷攻击
+            }
         }
 
         // 检查卡牌是否是“狩猎”，是则只能被“狩猎”指定的卡牌阻挡
@@ -436,6 +458,7 @@ public class GameEngine
         State.PendingCardInstance = null;
         State.PendingAttackCardInstance = null;
         State.PendingBlockCardInstance = null;
+        State.PendingHunterTargetCardInstance = null;
     }
     //玩家失去生命，返回true表示玩家死亡游戏结束，返回false表示游戏继续
     public bool LoseLife(int playerID, int amount)

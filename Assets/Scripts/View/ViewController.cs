@@ -23,6 +23,7 @@ public class ViewController : MonoBehaviour
     private GamePhase currentPhase;
     private bool isLocalPlayerExpected;
     private CardView selectedCard;
+    private CardView targetCard;
 
     // Start is called before the first frame update
     void Start()
@@ -50,22 +51,24 @@ public class ViewController : MonoBehaviour
         CardNetworkState[] opponentPlayerField,
         int opponentHandCount,
         CardNetworkState pendingCard,
-        CardNetworkState pendingAttack
+        CardNetworkState pendingAttack,
+        CardNetworkState pendingTarget
         )
     {
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
 
         selectedCard = null;
+        targetCard = null;
         AttackButton.gameObject.SetActive(false);
         
         RefreshPlayerPortrait(true, localPlayerLife, 
             localPlayerMindbugCount, isLocalPlayerExpected);
         RefreshPlayerPortrait(false, opponentPlayerLife, opponentPlayerMindbugCount,
             !isLocalPlayerExpected);
-        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack);
-        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack);
-        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack);
+        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack, pendingTarget);
+        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack, pendingTarget);
+        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack, pendingTarget);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
         RefreshPendingCardsView(pendingCard);
 
@@ -73,14 +76,16 @@ public class ViewController : MonoBehaviour
         RefreshDeckCount(false, opponentPlayerDeckCount);
         RefreshDiscardCount(true, localPlayerDiscardCount);
         RefreshDiscardCount(false, opponentPlayerDiscardCount);
-        RefreshButtons(localPlayerMindbugCount);
+        RefreshButtons(localPlayerMindbugCount,pendingTarget);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
         
     }
 
     public void RefreshHandOrFieldView(CardNetworkState[] cards,
         Transform playerTransform,
-        string handOrField,CardNetworkState pendingAttack)
+        string handOrField, 
+        CardNetworkState pendingAttack, 
+        CardNetworkState pendingTarget)
     {
         Transform handContainer = playerTransform.Find(handOrField);
         // 清空现有手牌视图
@@ -95,7 +100,12 @@ public class ViewController : MonoBehaviour
             CardView cardView = cardViewObj.GetComponent<CardView>();
             // 创建CardInstance对象
             CardData cardData = GetCardDataByID(cards[i].CardDataID);
-            cardView.UpdateCardView(cardData.CardName, cardData.Description, cards[i].currentPower, cards[i].CardInstanceID,cards[i].isExhausted);
+            cardView.UpdateCardView(cardData.CardName, 
+                cardData.Description, 
+                cards[i].currentPower, 
+                cards[i].CardInstanceID,
+                cards[i].keywords,
+                cards[i].isExhausted);
 
             bool isLocalHand = (playerTransform == LocalPlayer && handOrField == "Hand");
             bool isLocalField = (playerTransform == LocalPlayer && handOrField == "Field");
@@ -133,6 +143,16 @@ public class ViewController : MonoBehaviour
             {
                 cardView.transform.Find("Highlight").gameObject.SetActive(false);
             }
+
+            // 高亮显示当前被选中的卡牌
+            if(pendingTarget.CardInstanceID == cards[i].CardInstanceID)
+            {
+                cardView.transform.Find("Aimed").gameObject.SetActive(true);
+            }
+            else
+            {
+                cardView.transform.Find("Aimed").gameObject.SetActive(false);
+            }
         }
     }
 
@@ -151,7 +171,8 @@ public class ViewController : MonoBehaviour
             GameObject cardViewObj = Instantiate(CardViewPrefab, handContainer);
             CardView cardView = cardViewObj.GetComponent<CardView>();
             // 设置卡牌为背面显示
-            cardView.UpdateCardView("Back", "", 0, -1, false); // 使用-1表示未知的CardInstanceID
+            cardView.UpdateCardView("Back", "", 0, -2, 0, false); // 使用-2表示未知的CardInstanceID，为了和未知目标的-1ID区分开
+            //TODO:制作真正的卡背显示方法
             cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
         }
@@ -173,7 +194,10 @@ public class ViewController : MonoBehaviour
         CardView cardView = cardViewObj.GetComponent<CardView>();
         cardView.UpdateCardView(GetCardDataByID(pendingCard.CardDataID).CardName,
             GetCardDataByID(pendingCard.CardDataID).Description,
-            pendingCard.currentPower, pendingCard.CardInstanceID, pendingCard.isExhausted);
+            pendingCard.currentPower, 
+            pendingCard.CardInstanceID, 
+            pendingCard.keywords, 
+            pendingCard.isExhausted);
         cardView.transform.localPosition = new Vector3(0, 0, 0); // 调整卡牌位置
         cardView.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // 确保卡牌缩放为0.5
     }
@@ -206,7 +230,7 @@ public class ViewController : MonoBehaviour
         deckText.text = deckCount.ToString();
     }
 
-    public void RefreshButtons(int localPlayerMindbugCount)
+    public void RefreshButtons(int localPlayerMindbugCount,CardNetworkState pendingTarget)
     {
         if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
         {
@@ -227,8 +251,14 @@ public class ViewController : MonoBehaviour
             
             UseMindbugButton.gameObject.SetActive(false);
             NoMindbugButton.gameObject.SetActive(false);
-
-            NoBlockButton.gameObject.SetActive(true);
+            if(pendingTarget.CardInstanceID != -1)//狩猎目标如果存在
+            {
+                NoBlockButton.gameObject.SetActive(false);
+            }
+            else
+            {
+                NoBlockButton.gameObject.SetActive(true);
+            }
         }
         else
         {
@@ -272,12 +302,58 @@ public class ViewController : MonoBehaviour
             selectedCard = cardView;
             selectedCard.SetSelected(true);
             AttackButton.gameObject.SetActive(true);
+            if((selectedCard.CurrentKeywords & Keywords.Hunter) != 0)
+            {
+                //如果选中的卡牌有猎人关键词，则还可以选择目标对手卡牌
+                Transform opponentField = OpponentPlayer.Find("Field");
+                foreach(Transform child in opponentField)
+                {
+                    CardView opponentCardView = child.GetComponent<CardView>();
+                    opponentCardView.SetClickAction(TargetDecision);
+                }
+            }
         }
         else
         {
             selectedCard.SetSelected(false);
+            //还需要清理可能存在的选择点击事件和目标卡牌
+            if((selectedCard.CurrentKeywords & Keywords.Hunter) != 0
+                || targetCard != null)
+            {
+                Transform opponentField = OpponentPlayer.Find("Field");
+                foreach(Transform child in opponentField)
+                {
+                    CardView opponentCardView = child.GetComponent<CardView>();
+                    opponentCardView.SetClickAction(null);
+                }
+                if(targetCard != null)
+                {
+                    targetCard.SetAimed(false);
+                    targetCard = null;
+                }
+            }
             selectedCard = null;
             AttackButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void TargetDecision(CardView cardView)
+    {
+        if(targetCard == null)
+        {
+            targetCard = cardView;
+            targetCard.SetAimed(true);
+        }
+        else if(targetCard == cardView)
+        {
+            targetCard.SetAimed(false);
+            targetCard = null;
+        }
+        else
+        {
+            targetCard.SetAimed(false);
+            targetCard = cardView;
+            targetCard.SetAimed(true);
         }
     }
 
@@ -288,8 +364,18 @@ public class ViewController : MonoBehaviour
             selectedCard.SetSelected(false);
             //注意，这里需要先把selectedCard的待选设为false然后再发送网络请求
             //因为在网络请求发送后，可能会触发UI刷新，导致selectedCard被销毁，从而无法设置选中状态
-            networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
+            if(targetCard != null)
+            {
+                targetCard.SetAimed(false);
+                networkController.AttackDecisionRequest(selectedCard.CardInstanceID, targetCard.CardInstanceID);
+                targetCard = null;
+            }
+            else
+            {
+                networkController.AttackDecisionRequest(selectedCard.CardInstanceID, -1);
+            }
             selectedCard = null;
+            targetCard = null;
             AttackButton.gameObject.SetActive(false);
         }
     }

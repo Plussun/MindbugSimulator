@@ -6,5 +6,7 @@ public struct CardNetworkState : INetworkSerializeByMemcpy
     public int currentPower;
 
     public bool isExhausted;
+
+    public int keywords;
     
 }
