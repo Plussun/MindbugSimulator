@@ -28,6 +28,7 @@ public enum GamePhase
 {
     Setup,
     WaitingForMainAction,
+    WaitingForFrenzyAttack,
     WaitingForMindbugDecision,
     WaitingForBlockDecision,
     GameOver

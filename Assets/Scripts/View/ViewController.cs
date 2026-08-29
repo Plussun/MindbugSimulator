@@ -16,6 +16,7 @@ public class ViewController : MonoBehaviour
     public Button UseMindbugButton;
     public Button AttackButton;
     public Button BlockButton;
+    public Button NoFrenzyAttackButton;
 
     public GameController gameController;
     public NetworkController networkController;
@@ -31,6 +32,7 @@ public class ViewController : MonoBehaviour
         NoBlockButton.onClick.AddListener(OnNoBlockButtonClicked);
         AttackButton.onClick.AddListener(OnAttackButtonClicked);
         BlockButton.onClick.AddListener(OnBlockButtonClicked);
+        NoFrenzyAttackButton.onClick.AddListener(OnNoFrenzyAttackButtonClicked);
     }
     public void RefreshView(
         int gamePhase,
@@ -128,6 +130,17 @@ public class ViewController : MonoBehaviour
                 isLocalPlayerExpected)
             {
                 cardView.SetClickAction(BlockDecision);
+            }
+
+            if(isLocalField &&
+                currentPhase == GamePhase.WaitingForFrenzyAttack &&
+                isLocalPlayerExpected)
+            {
+                //只给上次攻击的卡牌绑定攻击事件
+                if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
+                {
+                    cardView.SetClickAction(AttackDecision);
+                }
             }
 
 
@@ -232,6 +245,11 @@ public class ViewController : MonoBehaviour
 
     public void RefreshButtons(int localPlayerMindbugCount,CardNetworkState pendingTarget)
     {
+        UseMindbugButton.gameObject.SetActive(false);
+        NoMindbugButton.gameObject.SetActive(false);
+        NoBlockButton.gameObject.SetActive(false);
+        NoFrenzyAttackButton.gameObject.SetActive(false);
+
         if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
         {
             if(localPlayerMindbugCount > 0)
@@ -243,14 +261,9 @@ public class ViewController : MonoBehaviour
                 UseMindbugButton.gameObject.SetActive(false);
             }
             NoMindbugButton.gameObject.SetActive(true);
-
-            NoBlockButton.gameObject.SetActive(false);
         }
         else if(currentPhase == GamePhase.WaitingForBlockDecision && isLocalPlayerExpected)
         {
-            
-            UseMindbugButton.gameObject.SetActive(false);
-            NoMindbugButton.gameObject.SetActive(false);
             if(pendingTarget.CardInstanceID != -1)//狩猎目标如果存在
             {
                 NoBlockButton.gameObject.SetActive(false);
@@ -260,12 +273,9 @@ public class ViewController : MonoBehaviour
                 NoBlockButton.gameObject.SetActive(true);
             }
         }
-        else
+        else if(currentPhase == GamePhase.WaitingForFrenzyAttack && isLocalPlayerExpected)
         {
-            UseMindbugButton.gameObject.SetActive(false);
-            NoMindbugButton.gameObject.SetActive(false);
-
-            NoBlockButton.gameObject.SetActive(false);
+            NoFrenzyAttackButton.gameObject.SetActive(true);
         }
     }
 
@@ -413,6 +423,11 @@ public class ViewController : MonoBehaviour
     public void OnNoBlockButtonClicked()
     {
         networkController.BlockDecisionRequest(false, -1);
+    }
+
+    public void OnNoFrenzyAttackButtonClicked()
+    {
+        networkController.SkipFrenzyAttackRequest();
     }
 
 

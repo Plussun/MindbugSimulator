@@ -223,7 +223,7 @@ public class GameEngine
             State.Players[State.ExpectedPlayerID].MindbugCount-=1;
             Debug.Log("玩家" + playerID + "使用了Mindbug，卡牌" 
             + State.PendingCardInstance.CardData.CardName + "加入到玩家" + State.ExpectedPlayerID + "的场上");
-            StartNextTurn(true); // 保持当前回合玩家不变，开始下一回合
+            StartNextTurn(State.ActivePlayerID, true); // 保持当前回合玩家不变，开始下一回合
   
         }
         else
@@ -232,7 +232,7 @@ public class GameEngine
             
             DeployCard(State.ActivePlayerID, State.PendingCardInstance);
 
-            StartNextTurn(false); // 切换到另一个玩家
+            StartNextTurn(State.ActivePlayerID, false); // 切换到另一个玩家
             Debug.Log("玩家" + playerID + "没有使用Mindbug");
         }
 
@@ -242,9 +242,10 @@ public class GameEngine
 
     public void AttackDecision(int playerID, int cardInstanceID, int targetCardInstanceID)
     {
-        if(State.CurrentPhase != GamePhase.WaitingForMainAction)
+        if(State.CurrentPhase != GamePhase.WaitingForMainAction 
+            && State.CurrentPhase != GamePhase.WaitingForFrenzyAttack)
         {
-            Debug.Log("当前不是主要行动阶段，无法进行攻击决策");
+            Debug.Log("当前不是主要行动或二次攻击阶段，无法进行攻击决策");
             return;
         }
         if(playerID != State.ActivePlayerID)
@@ -252,11 +253,28 @@ public class GameEngine
             Debug.Log("玩家" + playerID + "不是当前回合玩家，无法进行攻击决策");
             return;
         }
-        State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
-            card => card.CardInstanceID == cardInstanceID);
+        if(State.CurrentPhase == GamePhase.WaitingForFrenzyAttack)
+        {
+            if(State.PendingAttackCardInstance == null)
+            {
+                Debug.Log("当前是二次攻击阶段，但没有找到上一轮的攻击卡牌实例，无法进行二次攻击");
+                return;
+            }
+            if(State.PendingAttackCardInstance.CardInstanceID != cardInstanceID)
+            {
+                Debug.Log("当前是二次攻击阶段，但选择的攻击卡牌实例ID与上一轮的攻击卡牌实例ID不一致，无法进行二次攻击");
+                return;
+            }
+        }
+        else{
+            //如果是正常攻击阶段，则寻找相关实例提交为PendingAttackCardInstance
+            State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
+                card => card.CardInstanceID == cardInstanceID);
+        }
         
         if(State.PendingAttackCardInstance != null)
         {
+            State.PendingAttackCardInstance.AttackCount += 1; // 增加攻击次数
             //如果攻击卡牌有hunter关键词且存在目标卡牌
             if( State.PendingAttackCardInstance.HasKeyword(Keywords.Hunter) &&
                 targetCardInstanceID >= 0)
@@ -320,6 +338,10 @@ public class GameEngine
             {
                 Debug.Log("玩家" + State.ExpectedPlayerID + 
                     "没有使用阻挡，生命值减少1，当前生命值为0，游戏结束");
+                if(State.PendingAttackCardInstance != null)
+                {
+                    State.PendingAttackCardInstance.AttackCount = 0;
+                }
                 State.PendingAttackCardInstance = null;
                 State.PendingBlockCardInstance = null;
                 State.PendingHunterTargetCardInstance = null;
@@ -365,8 +387,41 @@ public class GameEngine
             }
         }
 
+        //能够二次攻击的条件：
+        // 攻击卡牌存在，且具有Frenzy关键词，
+        // 且攻击次数小于2，且攻击卡牌仍在当前回合玩家的场上
+        CardInstance attackCard = State.PendingAttackCardInstance;
+        bool canAttackAgain = attackCard != null &&
+            attackCard.HasKeyword(Keywords.Frenzy) &&
+            attackCard.AttackCount < 2 &&
+            State.Players[State.ActivePlayerID].Field.Contains(attackCard);
+        if(canAttackAgain)
+        {
+            ChangeGamePhase(GamePhase.WaitingForFrenzyAttack);
+            Debug.Log("玩家" + State.ActivePlayerID + "的攻击卡牌" 
+                + attackCard.CardData.CardName + "具有Frenzy关键词，可以进行二次攻击");
+            State.PendingBlockCardInstance = null; // 清除阻挡卡牌实例
+            State.PendingHunterTargetCardInstance = null; // 清除狩猎目标卡牌
+            State.ExpectedPlayerID = State.ActivePlayerID; // 设置等待决策的玩家为当前回合玩家
+            return;
+        }
+        StartNextTurn(State.ActivePlayerID, false); // 切换到另一个玩家
+    }
 
-        StartNextTurn(false); // 切换到另一个玩家
+    public void SkipFrenzyAttack(int playerID)
+    {
+        if(State.CurrentPhase != GamePhase.WaitingForFrenzyAttack)
+        {
+            Debug.Log("当前不是Frenzy二次攻击阶段，无法放弃二次攻击");
+            return;
+        }
+        if(playerID != State.ExpectedPlayerID)
+        {
+            Debug.Log("玩家" + playerID + "不是当前等待决策的玩家，无法放弃二次攻击");
+            return;
+        }
+
+        StartNextTurn(playerID, false);
     }
 
     public bool CanBlock(CardInstance attackCard, CardInstance blockCard, CardInstance targetCard = null)
@@ -440,11 +495,16 @@ public class GameEngine
         }
     }
 
-    public void StartNextTurn(bool keepActivePlayer)
+    public void StartNextTurn(int playerID, bool keepActivePlayer)
     {
         if(State.CurrentPhase == GamePhase.GameOver)
         {
             Debug.Log("游戏已结束，无法开始下一回合");
+            return;
+        }
+        if(playerID != State.ActivePlayerID)
+        {
+            Debug.Log("玩家" + playerID + "不是当前回合玩家，无法开始下一回合");
             return;
         }
         if (!keepActivePlayer)
@@ -456,6 +516,10 @@ public class GameEngine
         ChangeGamePhase(GamePhase.WaitingForMainAction);
 
         State.PendingCardInstance = null;
+        if(State.PendingAttackCardInstance != null)
+        {
+            State.PendingAttackCardInstance.AttackCount = 0; // 重置攻击次数
+        }
         State.PendingAttackCardInstance = null;
         State.PendingBlockCardInstance = null;
         State.PendingHunterTargetCardInstance = null;
@@ -619,5 +683,4 @@ public class GameEngine
 
 
 }
-
 

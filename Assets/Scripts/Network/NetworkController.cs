@@ -128,6 +128,21 @@ public class NetworkController : NetworkBehaviour
             + blockCardInstanceId);
     }
 
+    public void SkipFrenzyAttackRequest()
+    {
+        SkipFrenzyAttackServerRpc();
+    }
+    [ServerRpc(RequireOwnership = false)]
+    private void SkipFrenzyAttackServerRpc(
+        ServerRpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        int playerId = GetPlayerIdByClientId(clientId);
+        GameController.GameEngine.SkipFrenzyAttack(playerId);
+        SyncState(); // 在服务器端处理完请求后，同步状态到客户端
+        Debug.Log("玩家" + playerId + "请求放弃Frenzy二次攻击");
+    }
+
     
 
     //用于把Gamestate同步到两边的客户端
@@ -275,6 +290,12 @@ public class NetworkController : NetworkBehaviour
                     actionText = expectedPlayerId == playerId
                         ? "请你出牌或发起攻击"
                         : "等待对手行动";
+                    break;
+                case GamePhase.WaitingForFrenzyAttack:
+                    phaseText = "狂暴二次攻击阶段";
+                    actionText = expectedPlayerId == playerId
+                        ? "请选择是否再次攻击"
+                        : "等待对手决定是否再次攻击";
                     break;
                 case GamePhase.WaitingForMindbugDecision:
                     phaseText = "夺心虫决定阶段";
