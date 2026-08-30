@@ -11,7 +11,7 @@ public class GameController : MonoBehaviour
     void Awake()
     {
         GameEngine = new GameEngine();
-        GameEngine.SetAllCards(GetRandomAllCards(48));
+        GameEngine.SetAllCardsBase(GetRandomAllCards(48));
     }
 
     public List<CardData> GetRandomAllCards(int allCardsCount)

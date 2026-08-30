@@ -143,6 +143,21 @@ public class NetworkController : NetworkBehaviour
         Debug.Log("玩家" + playerId + "请求放弃Frenzy二次攻击");
     }
 
+    public void NextGameRequest()
+    {
+        NextGameServerRpc();
+    }
+    [ServerRpc(RequireOwnership = false)]
+    private void NextGameServerRpc(
+        ServerRpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        int playerId = GetPlayerIdByClientId(clientId);
+        GameController.GameEngine.NextGame();
+        SyncState(); // 在服务器端处理完请求后，同步状态到客户端
+        Debug.Log("玩家" + playerId + "请求开始下一局游戏");
+    }
+
     
 
     //用于把Gamestate同步到两边的客户端

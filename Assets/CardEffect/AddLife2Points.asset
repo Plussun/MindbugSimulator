@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9757c8e9735f585d8440297a8b3bff7, type: 3}
   m_Name: AddLife2Points
   m_EditorClassIdentifier: 
-  Trigger: 4
+  Trigger: 3
   LifeToAdd: 2

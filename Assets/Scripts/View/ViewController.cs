@@ -17,6 +17,7 @@ public class ViewController : MonoBehaviour
     public Button AttackButton;
     public Button BlockButton;
     public Button NoFrenzyAttackButton;
+    public Button NextGameButton;
 
     public GameController gameController;
     public NetworkController networkController;
@@ -249,6 +250,7 @@ public class ViewController : MonoBehaviour
         NoMindbugButton.gameObject.SetActive(false);
         NoBlockButton.gameObject.SetActive(false);
         NoFrenzyAttackButton.gameObject.SetActive(false);
+        NextGameButton.gameObject.SetActive(false);
 
         if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
         {
@@ -276,6 +278,10 @@ public class ViewController : MonoBehaviour
         else if(currentPhase == GamePhase.WaitingForFrenzyAttack && isLocalPlayerExpected)
         {
             NoFrenzyAttackButton.gameObject.SetActive(true);
+        }
+        else if(currentPhase == GamePhase.GameOver)
+        {
+            NextGameButton.gameObject.SetActive(true);
         }
     }
 

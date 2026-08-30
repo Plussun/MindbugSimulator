@@ -7,6 +7,7 @@ using UnityEngine;
 public class GameEngine
 {
     public GameState State;
+    public List<CardInstance> AllCardsBase = new List<CardInstance>();
 
     public GameEngine()
     {
@@ -22,6 +23,8 @@ public class GameEngine
         
         SetRandomActivePlayer();
         SetExpectedPlayer(State.ActivePlayerID);
+
+        SetAllCards();
 
         SetPlayerDeck(State.ActivePlayerID, State.AllCards, 10);
         SetPlayerDeck(1 - State.ActivePlayerID, State.AllCards, 10);
@@ -46,17 +49,23 @@ public class GameEngine
         Debug.Log("设置玩家" + playerID + "为等待决策的玩家");
     }
 
-    public void SetAllCards(List<CardData> allCards)
+    //设置基础牌库，只是用于暂时测试阶段，具体实现完48张卡需要替换。
+    public void SetAllCardsBase(List<CardData> allCardsBase)
     {
-        State.AllCards.Clear();
+        AllCardsBase.Clear();
         int instanceIDCounter = 0;
-        foreach (var cardData in allCards)
+        foreach (var cardData in allCardsBase)
         {
             instanceIDCounter++;
             int thisInstanceID = instanceIDCounter; // 全局唯一的卡牌实例ID
             CardInstance cardInstance = new CardInstance(cardData, thisInstanceID);
-            State.AllCards.Add(cardInstance);
+            AllCardsBase.Add(cardInstance);
         }
+    }
+    public void SetAllCards()
+    {
+        State.AllCards.Clear();
+        State.AllCards = new List<CardInstance>(AllCardsBase); // 复制基础卡牌实例列表
 
         //对所有卡牌的总牌库进行洗牌
         for (int i = 0; i < State.AllCards.Count; i++)
@@ -679,6 +688,18 @@ public class GameEngine
                 card.UpdatePowerAndKeywords();
             }
         }
+    }
+
+    public void NextGame()
+    {
+        if(State.CurrentPhase != GamePhase.GameOver)
+        {
+            Debug.Log("当前游戏未结束，无法开始下一局");
+            return;
+        }
+        State = new GameState();
+        Debug.Log("游戏重置，开始下一局");
+        StartGame();
     }
 
 
