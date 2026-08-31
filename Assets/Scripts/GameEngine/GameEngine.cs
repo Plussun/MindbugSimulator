@@ -435,6 +435,23 @@ public class GameEngine
 
     public bool CanBlock(CardInstance attackCard, CardInstance blockCard, CardInstance targetCard = null)
     {
+        // 当前回合玩家是攻击方，另一名玩家是阻挡方。
+        PlayerState blockingPlayer = State.Players[1 - State.ActivePlayerID];
+
+        if(blockingPlayer.GlobalForbiddenBlockerInstanceIDs.Contains(blockCard.CardInstanceID))
+        {
+            return false;
+        }
+
+        IndividualBlockRestriction individualRestriction =
+            blockingPlayer.IndividualBlockRestrictions.Find(
+                restriction => restriction.AttackCardInstanceID == attackCard.CardInstanceID);
+        if(individualRestriction != null &&
+            individualRestriction.ForbiddenBlockerInstanceIDs.Contains(blockCard.CardInstanceID))
+        {
+            return false;
+        }
+
         // 检查卡牌是否是敏捷，是则只能被敏捷卡牌阻挡
         if (attackCard.HasKeyword(Keywords.Sneaky))
         {
@@ -453,6 +470,37 @@ public class GameEngine
         }
 
         return true; // 默认情况下可以阻挡
+    }
+
+    public void AddGlobalBlockRestriction(int playerID, int blockerCardInstanceID)
+    {
+        List<int> forbiddenBlockers = State.Players[playerID].GlobalForbiddenBlockerInstanceIDs;
+        if(!forbiddenBlockers.Contains(blockerCardInstanceID))
+        {
+            forbiddenBlockers.Add(blockerCardInstanceID);
+        }
+    }
+
+    public void AddIndividualBlockRestriction(
+        int playerID,
+        int attackCardInstanceID,
+        int blockerCardInstanceID)
+    {
+        List<IndividualBlockRestriction> restrictions =
+            State.Players[playerID].IndividualBlockRestrictions;
+        IndividualBlockRestriction restriction = restrictions.Find(
+            item => item.AttackCardInstanceID == attackCardInstanceID);
+
+        if(restriction == null)
+        {
+            restriction = new IndividualBlockRestriction(attackCardInstanceID);
+            restrictions.Add(restriction);
+        }
+
+        if(!restriction.ForbiddenBlockerInstanceIDs.Contains(blockerCardInstanceID))
+        {
+            restriction.ForbiddenBlockerInstanceIDs.Add(blockerCardInstanceID);
+        }
     }
 
     public void ResolveCombat(CardInstance attackCard, CardInstance blockCard)
@@ -654,6 +702,8 @@ public class GameEngine
     {
         foreach(var player in State.Players)
         {
+            player.GlobalForbiddenBlockerInstanceIDs.Clear();
+            player.IndividualBlockRestrictions.Clear();
             foreach(var card in player.Field)
             {
                 card.ClearTempEffects();
@@ -663,6 +713,12 @@ public class GameEngine
     public void RefreshFieldEffect()
     {
         ClearAllOnFieldEffect();
+        // 阻挡限制依赖更新后的 CurrentPower 和 CurrentKeywords，
+        // 因此先暂存这类效果，在本次刷新的普通场上效果结算后再执行。
+        // 这只是 RefreshFieldEffect 内部的两阶段计算，与未来的事件队列无关。
+        List<(CardFieldEffect effect, int playerID, CardInstance card)> afterCardUpdateEffects =
+            new List<(CardFieldEffect, int, CardInstance)>();
+
         foreach(var player in State.Players)
         {
             foreach(var card in player.Field)
@@ -671,12 +727,27 @@ public class GameEngine
                 {
                     foreach(var fieldEffect in card.CardData.CardFieldEffects)
                     {
-                        fieldEffect.Resolve(this, player.PlayerID, card);
+                        if(fieldEffect.ResolveAfterCardUpdate)
+                        {
+                            afterCardUpdateEffects.Add((fieldEffect, player.PlayerID, card));
+                        }
+                        else
+                        {
+                            fieldEffect.Resolve(this, player.PlayerID, card);
+                        }
                     }
                 }
             }
         }
         UpdateAllFieldCardPowerAndKeywords();
+
+        foreach(var afterCardUpdateEffect in afterCardUpdateEffects)
+        {
+            afterCardUpdateEffect.effect.Resolve(
+                this,
+                afterCardUpdateEffect.playerID,
+                afterCardUpdateEffect.card);
+        }
     }
 
     public void UpdateAllFieldCardPowerAndKeywords()
@@ -704,4 +775,3 @@ public class GameEngine
 
 
 }
-

@@ -4178,6 +4178,8 @@ MonoBehaviour:
         Deck: []
         Field: []
         DiscardPile: []
+        GlobalForbiddenBlockerInstanceIDs: 
+        IndividualBlockRestrictions: []
         Life: 3
         MindbugCount: 2
       - PlayerID: 1
@@ -4185,6 +4187,8 @@ MonoBehaviour:
         Deck: []
         Field: []
         DiscardPile: []
+        GlobalForbiddenBlockerInstanceIDs: 
+        IndividualBlockRestrictions: []
         Life: 3
         MindbugCount: 2
       ActivePlayerID: 0
@@ -4234,6 +4238,7 @@ MonoBehaviour:
         TempKeywords: 0
         IsExhausted: 0
         AttackCount: 0
+    AllCardsBase: []
   TestHand:
   - {fileID: 11400000, guid: c7f518523dab6f3989525948640dbd53, type: 2}
   - {fileID: 11400000, guid: 989f9ecc31095e4978af6ae7b0cce9b3, type: 2}
@@ -4251,7 +4256,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 87c6703bf64ddb31fadb2e7a4e2e2d94, type: 2}
   - {fileID: 11400000, guid: 92d07c754809752b98c469cdebaf2fe2, type: 2}
   - {fileID: 11400000, guid: df938d658d4683f46ba0e5e4963eb8b8, type: 2}
-  - {fileID: 11400000, guid: 7895eda444118f240b736f32a7b34345, type: 2}
+  - {fileID: 11400000, guid: c38c6f05b69abd9728270bc25b804e2c, type: 2}
 --- !u!4 &1090925394
 Transform:
   m_ObjectHideFlags: 0
