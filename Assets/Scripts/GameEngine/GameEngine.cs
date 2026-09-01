@@ -7,6 +7,7 @@ using UnityEngine;
 public class GameEngine
 {
     public GameState State;
+    public EventQueue EventQueue = new EventQueue();
     public List<CardInstance> AllCardsBase = new List<CardInstance>();
 
     public GameEngine()
@@ -249,7 +250,7 @@ public class GameEngine
         State.PendingCardInstance = null;
     }
 
-    public void AttackDecision(int playerID, int cardInstanceID, int targetCardInstanceID)
+    public void AttackDecision(int playerID, int cardInstanceID)
     {
         if(State.CurrentPhase != GamePhase.WaitingForMainAction 
             && State.CurrentPhase != GamePhase.WaitingForFrenzyAttack)
@@ -280,7 +281,20 @@ public class GameEngine
             State.PendingAttackCardInstance = State.Players[State.ActivePlayerID].Field.Find(
                 card => card.CardInstanceID == cardInstanceID);
         }
-        
+        if(State.PendingAttackCardInstance == null)
+        {
+            Debug.Log("玩家" + playerID + "没有找到攻击卡牌实例ID为" + cardInstanceID + "的卡牌");
+            return;
+        }
+        AttackEvent attackEvent = new AttackEvent(playerID, 
+            State.PendingAttackCardInstance.CardInstanceID);
+        EventQueue.Enqueue(attackEvent);
+        EventQueue.ProcessEvent(this);
+    }
+
+    public void BeginAttack(int playerID, int cardInstanceID, int targetCardInstanceID)
+    {
+        //TODO:在攻击决策做出判断后，执行攻击流程
         if(State.PendingAttackCardInstance != null)
         {
             State.PendingAttackCardInstance.AttackCount += 1; // 增加攻击次数
@@ -659,7 +673,7 @@ public class GameEngine
             player.Field.Remove(card);
             player.DiscardPile.Add(card);
             Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
-            //TODO：触发阵亡事件
+            //触发阵亡事件
             if(card.CardData.CardEffects != null)
             {
                 foreach(var effect in card.CardData.CardEffects)
@@ -761,6 +775,57 @@ public class GameEngine
         }
     }
 
+    public void SelectCards(int playerID, List<int> selectedCardInstanceIDs)
+    {
+        if(State.CurrentPhase != GamePhase.WaitingForChoice)
+        {
+            Debug.Log("当前不是等待选择阶段，无法进行选择");
+            return;
+        }
+        if(playerID != State.ExpectedPlayerID)
+        {
+            Debug.Log("玩家" + playerID + "不是当前等待决策的玩家，无法进行选择");
+            return;
+        }
+        EventQueue.SubmitChoice(this, selectedCardInstanceIDs);
+    }
+
+    public CardInstance GetCardInstanceByID(int cardInstanceID)
+    {
+        foreach(var player in State.Players)
+        {
+            foreach(var card in player.Hand)
+            {
+                if(card.CardInstanceID == cardInstanceID)
+                {
+                    return card;
+                }
+            }
+            foreach(var card in player.Field)
+            {
+                if(card.CardInstanceID == cardInstanceID)
+                {
+                    return card;
+                }
+            }
+            foreach(var card in player.Deck)
+            {
+                if(card.CardInstanceID == cardInstanceID)
+                {
+                    return card;
+                }
+            }
+            foreach(var card in player.DiscardPile)
+            {
+                if(card.CardInstanceID == cardInstanceID)
+                {
+                    return card;
+                }
+            }
+        }
+        return null; // 如果没有找到对应的卡牌实例，返回null
+    }
+    
     public void NextGame()
     {
         if(State.CurrentPhase != GamePhase.GameOver)

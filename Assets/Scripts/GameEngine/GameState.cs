@@ -16,6 +16,9 @@ public class GameState
     public CardInstance PendingBlockCardInstance; // 当前正在Block决策的卡牌实例
     public CardInstance PendingHunterTargetCardInstance; // 当前正在Hunter决策的目标卡牌实例
 
+    public PendingChoice PendingChoice; // 当前正在等待玩家选择的选择事件
+
+
     public GameState()
     {
         CurrentPhase = GamePhase.Setup;
@@ -29,7 +32,16 @@ public enum GamePhase
     Setup,
     WaitingForMainAction,
     WaitingForFrenzyAttack,
+    WaitingForChoice,
     WaitingForMindbugDecision,
     WaitingForBlockDecision,
     GameOver
+}
+[System.Serializable]
+public class PendingChoice
+{
+    public int PlayerID;
+    public int MaxSelectCount;
+    public int MinSelectCount;
+    public List<int> CandidateCardInstanceIDs;
 }

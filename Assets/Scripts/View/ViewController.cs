@@ -383,12 +383,12 @@ public class ViewController : MonoBehaviour
             if(targetCard != null)
             {
                 targetCard.SetAimed(false);
-                networkController.AttackDecisionRequest(selectedCard.CardInstanceID, targetCard.CardInstanceID);
+                networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
                 targetCard = null;
             }
             else
             {
-                networkController.AttackDecisionRequest(selectedCard.CardInstanceID, -1);
+                networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
             }
             selectedCard = null;
             targetCard = null;

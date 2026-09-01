@@ -96,20 +96,20 @@ public class NetworkController : NetworkBehaviour
     }
 
     //攻击请求
-    public void AttackDecisionRequest(int cardInstanceId, int targetCardInstanceId)
+    public void AttackDecisionRequest(int cardInstanceId)
     {
-        AttackDecisionServerRpc(cardInstanceId, targetCardInstanceId);
+        AttackDecisionServerRpc(cardInstanceId);
     }
     [ServerRpc(RequireOwnership = false)]
-    private void AttackDecisionServerRpc(int cardInstanceId, int targetCardInstanceId,
+    private void AttackDecisionServerRpc(int cardInstanceId,
         ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
         int playerId = GetPlayerIdByClientId(clientId);
-        GameController.GameEngine.AttackDecision(playerId, cardInstanceId, targetCardInstanceId);
+        GameController.GameEngine.AttackDecision(playerId, cardInstanceId);
         SyncState(); // 在服务器端处理完请求后，同步状态到客户端
         Debug.Log("玩家" + playerId + "请求攻击，卡牌实例ID为" 
-            + cardInstanceId + "，目标卡牌实例ID为" + targetCardInstanceId);
+            + cardInstanceId);
     }
 
     public void BlockDecisionRequest(bool useBlock,int blockCardInstanceId)
@@ -126,6 +126,22 @@ public class NetworkController : NetworkBehaviour
         SyncState(); // 在服务器端处理完请求后，同步状态到客户端
         Debug.Log("玩家" + playerId + "请求阻挡，卡牌实例ID为" 
             + blockCardInstanceId);
+    }
+
+    public void SelectCardsRequest(List<int> selectedCardInstanceIDs)
+    {
+        SelectCardsServerRpc(selectedCardInstanceIDs.ToArray());
+    }
+    [ServerRpc(RequireOwnership = false)]
+    private void SelectCardsServerRpc(int[] selectedCardInstanceIDs,
+        ServerRpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        int playerId = GetPlayerIdByClientId(clientId);
+        GameController.GameEngine.SelectCards(playerId, new List<int>(selectedCardInstanceIDs));
+        SyncState(); // 在服务器端处理完请求后，同步状态到客户端
+        Debug.Log("玩家" + playerId + "提交选择，选择的卡牌实例ID为" 
+            + string.Join(", ", selectedCardInstanceIDs));
     }
 
     public void SkipFrenzyAttackRequest()
