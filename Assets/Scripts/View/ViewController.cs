@@ -18,6 +18,7 @@ public class ViewController : MonoBehaviour
     public Button BlockButton;
     public Button NoFrenzyAttackButton;
     public Button NextGameButton;
+    public Button ChooseButton;
 
     public GameController gameController;
     public NetworkController networkController;
@@ -25,7 +26,9 @@ public class ViewController : MonoBehaviour
     private GamePhase currentPhase;
     private bool isLocalPlayerExpected;
     private CardView selectedCard;
-    private CardView targetCard;
+    private List<CardView> choosedCards = new List<CardView>();
+
+    private PendingChoice pendingChoice;
 
     // Start is called before the first frame update
     void Start()
@@ -34,6 +37,7 @@ public class ViewController : MonoBehaviour
         AttackButton.onClick.AddListener(OnAttackButtonClicked);
         BlockButton.onClick.AddListener(OnBlockButtonClicked);
         NoFrenzyAttackButton.onClick.AddListener(OnNoFrenzyAttackButtonClicked);
+        ChooseButton.onClick.AddListener(OnChooseButtonClicked);
     }
     public void RefreshView(
         int gamePhase,
@@ -55,23 +59,41 @@ public class ViewController : MonoBehaviour
         int opponentHandCount,
         CardNetworkState pendingCard,
         CardNetworkState pendingAttack,
-        CardNetworkState pendingTarget
+        CardNetworkState pendingTarget,
+        bool hasPendingChoice,
+        int maxSelectCount,
+        int minSelectCount,
+        int[] candidateCardInstanceIDs
         )
     {
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
 
         selectedCard = null;
-        targetCard = null;
+        choosedCards.Clear();
         AttackButton.gameObject.SetActive(false);
+        if(hasPendingChoice)
+        {
+            pendingChoice = new PendingChoice
+            {
+                PlayerID = localPlayerID,
+                MaxSelectCount = maxSelectCount,
+                MinSelectCount = minSelectCount,
+                CandidateCardInstanceIDs = new List<int>(candidateCardInstanceIDs)
+            };
+        }
+        else
+        {
+            pendingChoice = null;
+        }
         
         RefreshPlayerPortrait(true, localPlayerLife, 
             localPlayerMindbugCount, isLocalPlayerExpected);
         RefreshPlayerPortrait(false, opponentPlayerLife, opponentPlayerMindbugCount,
             !isLocalPlayerExpected);
-        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack, pendingTarget);
-        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack, pendingTarget);
-        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack, pendingTarget);
+        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack, pendingTarget,pendingChoice);
+        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
+        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
         RefreshPendingCardsView(pendingCard);
 
@@ -88,7 +110,8 @@ public class ViewController : MonoBehaviour
         Transform playerTransform,
         string handOrField, 
         CardNetworkState pendingAttack, 
-        CardNetworkState pendingTarget)
+        CardNetworkState pendingTarget,
+        PendingChoice pendingChoice)
     {
         Transform handContainer = playerTransform.Find(handOrField);
         // 清空现有手牌视图
@@ -167,6 +190,17 @@ public class ViewController : MonoBehaviour
             {
                 cardView.transform.Find("Aimed").gameObject.SetActive(false);
             }
+            // 高亮显示当前待选择的卡牌
+            if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(cards[i].CardInstanceID))
+            {
+                cardView.transform.Find("Candidate").gameObject.SetActive(true);
+                cardView.SetClickAction(ChooseDecision);
+            }
+            else
+            {
+                cardView.transform.Find("Candidate").gameObject.SetActive(false);
+            }
+
         }
     }
 
@@ -251,6 +285,7 @@ public class ViewController : MonoBehaviour
         NoBlockButton.gameObject.SetActive(false);
         NoFrenzyAttackButton.gameObject.SetActive(false);
         NextGameButton.gameObject.SetActive(false);
+        ChooseButton.gameObject.SetActive(false);
 
         if(currentPhase == GamePhase.WaitingForMindbugDecision && isLocalPlayerExpected)
         {
@@ -282,6 +317,10 @@ public class ViewController : MonoBehaviour
         else if(currentPhase == GamePhase.GameOver)
         {
             NextGameButton.gameObject.SetActive(true);
+        }
+        else if(currentPhase == GamePhase.WaitingForChoice && isLocalPlayerExpected)
+        {
+            ChooseButton.gameObject.SetActive(true);
         }
     }
 
@@ -318,59 +357,56 @@ public class ViewController : MonoBehaviour
             selectedCard = cardView;
             selectedCard.SetSelected(true);
             AttackButton.gameObject.SetActive(true);
-            if((selectedCard.CurrentKeywords & Keywords.Hunter) != 0)
-            {
-                //如果选中的卡牌有猎人关键词，则还可以选择目标对手卡牌
-                Transform opponentField = OpponentPlayer.Find("Field");
-                foreach(Transform child in opponentField)
-                {
-                    CardView opponentCardView = child.GetComponent<CardView>();
-                    opponentCardView.SetClickAction(TargetDecision);
-                }
-            }
         }
         else
         {
             selectedCard.SetSelected(false);
-            //还需要清理可能存在的选择点击事件和目标卡牌
-            if((selectedCard.CurrentKeywords & Keywords.Hunter) != 0
-                || targetCard != null)
-            {
-                Transform opponentField = OpponentPlayer.Find("Field");
-                foreach(Transform child in opponentField)
-                {
-                    CardView opponentCardView = child.GetComponent<CardView>();
-                    opponentCardView.SetClickAction(null);
-                }
-                if(targetCard != null)
-                {
-                    targetCard.SetAimed(false);
-                    targetCard = null;
-                }
-            }
             selectedCard = null;
             AttackButton.gameObject.SetActive(false);
         }
     }
 
-    public void TargetDecision(CardView cardView)
+    public void ChooseDecision(CardView cardView)
     {
-        if(targetCard == null)
+        if(currentPhase != GamePhase.WaitingForChoice)
         {
-            targetCard = cardView;
-            targetCard.SetAimed(true);
+            Debug.LogWarning("当前不在等待选择阶段，无法选择卡牌");
+            return;
         }
-        else if(targetCard == cardView)
+        if (!pendingChoice.CandidateCardInstanceIDs.Contains(cardView.CardInstanceID))
         {
-            targetCard.SetAimed(false);
-            targetCard = null;
+            Debug.LogWarning("选择的卡牌ID不在备选列表中");
+            return;
+        }
+        if(choosedCards.Contains(cardView))
+        {
+            ChooseButton.gameObject.SetActive(true);
+            choosedCards.Remove(cardView);
+            cardView.SetAimed(false);
+            return;
+        }
+        if(choosedCards.Count >= pendingChoice.MaxSelectCount)
+        {
+            Debug.LogWarning("已达到最大选择数量");
+            return;
         }
         else
         {
-            targetCard.SetAimed(false);
-            targetCard = cardView;
-            targetCard.SetAimed(true);
+            ChooseButton.gameObject.SetActive(true);
+            choosedCards.Add(cardView);
+            cardView.SetAimed(true);
         }
+    }
+
+    public void OnChooseButtonClicked()
+    {
+        if(choosedCards.Count < pendingChoice.MinSelectCount || choosedCards.Count > pendingChoice.MaxSelectCount)
+        {
+            Debug.LogWarning("选择的卡牌数量不符合要求");
+            return;
+        }
+        List<int> selectedCardInstanceIDs = choosedCards.ConvertAll(c => c.CardInstanceID);
+        networkController.SelectCardsRequest(selectedCardInstanceIDs);
     }
 
     public void OnAttackButtonClicked()
@@ -380,18 +416,10 @@ public class ViewController : MonoBehaviour
             selectedCard.SetSelected(false);
             //注意，这里需要先把selectedCard的待选设为false然后再发送网络请求
             //因为在网络请求发送后，可能会触发UI刷新，导致selectedCard被销毁，从而无法设置选中状态
-            if(targetCard != null)
-            {
-                targetCard.SetAimed(false);
-                networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
-                targetCard = null;
-            }
-            else
-            {
-                networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
-            }
+
+            networkController.AttackDecisionRequest(selectedCard.CardInstanceID);
+            
             selectedCard = null;
-            targetCard = null;
             AttackButton.gameObject.SetActive(false);
         }
     }

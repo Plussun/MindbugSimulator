@@ -223,7 +223,28 @@ public class NetworkController : NetworkBehaviour
                 TargetClientIds = new ulong[] { player1ClientId }
             }
         };
-
+        PendingChoice player0PendingChoice;
+        PendingChoice player1PendingChoice;
+        if (state.PendingChoice != null)
+        {
+            if (state.PendingChoice.PlayerID == 0)
+            {
+                player0PendingChoice = state.PendingChoice;
+                player1PendingChoice = null;
+            }
+            else
+            {
+                player0PendingChoice = null;
+                player1PendingChoice = state.PendingChoice;
+            }
+        }
+        else
+        {
+            player0PendingChoice = null;
+            player1PendingChoice = null;
+        }
+        
+        //player0状态同步
         UpdateStatusClientRpc(
             phase,
             winnerPlayerID,
@@ -245,8 +266,14 @@ public class NetworkController : NetworkBehaviour
             player1Field,
             player0Discard,
             player1Discard,
+            hasPendingChoice: player0PendingChoice != null,
+            maxSelectCount: player0PendingChoice?.MaxSelectCount ?? 0,
+            minSelectCount: player0PendingChoice?.MinSelectCount ?? 0,
+            candidateCardInstanceIDs: player0PendingChoice?.CandidateCardInstanceIDs?.ToArray()
+                ?? new int[0],
             rpcParamsPlayer0
         );
+        //player1状态同步
         UpdateStatusClientRpc(
             phase,
             winnerPlayerID,
@@ -268,6 +295,11 @@ public class NetworkController : NetworkBehaviour
             player0Field,
             player1Discard,
             player0Discard,
+            hasPendingChoice: player1PendingChoice != null,
+            maxSelectCount: player1PendingChoice?.MaxSelectCount ?? 0,
+            minSelectCount: player1PendingChoice?.MinSelectCount ?? 0,
+            candidateCardInstanceIDs: player1PendingChoice?.CandidateCardInstanceIDs?.ToArray()
+                ?? new int[0],
             rpcParamsPlayer1
         );
     }
@@ -295,6 +327,10 @@ public class NetworkController : NetworkBehaviour
         CardNetworkState[] opponentField,
         CardNetworkState[] playerDiscard,
         CardNetworkState[] opponentDiscard,
+        bool hasPendingChoice,
+        int maxSelectCount,
+        int minSelectCount,
+        int[] candidateCardInstanceIDs,
         ClientRpcParams clientRpcParams = default
     )
     {
@@ -386,7 +422,12 @@ public class NetworkController : NetworkBehaviour
                 opponentHandCount: opponentHandCount,
                 pendingCard: pendingCard,
                 pendingAttack: pendingAttackCard,
-                pendingTarget: pendingTargetCard
+                pendingTarget: pendingTargetCard,
+                hasPendingChoice: hasPendingChoice,
+                maxSelectCount: maxSelectCount,
+                minSelectCount: minSelectCount,
+                candidateCardInstanceIDs: candidateCardInstanceIDs
+                
             );
     }
 
@@ -460,7 +501,7 @@ public class NetworkController : NetworkBehaviour
 
     private CardNetworkState GetCardNetworkStateByCardInstance(CardInstance cardInstance)
     {
-        if (cardInstance == null)
+        if (cardInstance == null || cardInstance.CardData == null)
         {
             return new CardNetworkState
             {

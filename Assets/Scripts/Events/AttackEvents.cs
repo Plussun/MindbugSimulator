@@ -26,13 +26,19 @@ public class AttackEvent : GameEvent
         // 并把游戏状态改为WaitingForChoice，等待玩家选择目标(由requestchoice方法来处理)
         if(attackCard.CurrentKeywords.HasFlag(Keywords.Hunter))
         {
+            List<int> candidateCardInstanceIDs = gameEngine.State.Players[1 - AttackerPlayerID].Field.ConvertAll(c => c.CardInstanceID);
+            if(candidateCardInstanceIDs.Count == 0)
+            {
+                //如果没有可选目标，直接调用gameEngine.BeginAttack方法，开始攻击流程
+                gameEngine.BeginAttack(AttackerPlayerID, AttackCardInstanceID, -1);
+                return;
+            }
             gameEngine.EventQueue.RequestChoice(new PendingChoice
             {
                 PlayerID = AttackerPlayerID,
                 MaxSelectCount = 1,
                 MinSelectCount = 0,
-                CandidateCardInstanceIDs = gameEngine.State.Players
-                [1 - AttackerPlayerID].Field.ConvertAll(c => c.CardInstanceID)
+                CandidateCardInstanceIDs = candidateCardInstanceIDs
             }, gameEngine, this);
             return;
         }

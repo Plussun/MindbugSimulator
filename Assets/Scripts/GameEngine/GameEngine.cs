@@ -390,13 +390,14 @@ public class GameEngine
             }
             else
             {
-                State.PendingBlockCardInstance = blockCard;
+                
                 //判断是否可以阻挡
-                if(!CanBlock(State.PendingAttackCardInstance, State.PendingBlockCardInstance, State.PendingHunterTargetCardInstance))
+                if(!CanBlock(State.PendingAttackCardInstance, blockCard, State.PendingHunterTargetCardInstance))
                 {
                     Debug.Log("非法的阻挡对象");
                     return;
                 }
+                State.PendingBlockCardInstance = blockCard;
                 //触发阻挡效果
                 foreach(var effect in State.PendingBlockCardInstance.CardData.CardEffects)
                 {
@@ -658,17 +659,19 @@ public class GameEngine
     {
         PlayerState player = State.Players[playerID];
         CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
-        //处理坚韧关键词，检测其是否横置
-        if (card.HasKeyword(Keywords.Tough))
-        {
-            if (!card.IsExhausted)
-            {
-                card.IsExhausted = true;
-                return;
-            }
-        }
+
         if(card != null)
         {
+            //处理坚韧关键词，检测其是否横置
+            if (card.HasKeyword(Keywords.Tough))
+            {
+                if (!card.IsExhausted)
+                {
+                    card.IsExhausted = true;
+                    return;
+                }
+            }
+
             card.ClearTempEffects(); // 清除临时效果
             player.Field.Remove(card);
             player.DiscardPile.Add(card);
