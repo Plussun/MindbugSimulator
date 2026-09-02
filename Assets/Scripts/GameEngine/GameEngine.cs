@@ -313,17 +313,6 @@ public class GameEngine
             }
             Debug.Log("玩家" + playerID + "选择了卡牌" 
                 + State.PendingAttackCardInstance.CardData.CardName + "进行攻击");
-            //触发攻击效果
-            if(State.PendingAttackCardInstance.CardData.CardEffects != null)
-            {
-                foreach(var effect in State.PendingAttackCardInstance.CardData.CardEffects)
-                {
-                    if(effect.Trigger == EffectTrigger.OnAttack)
-                    {
-                        effect.Resolve(this, playerID, State.PendingAttackCardInstance);
-                    }
-                }
-            }
         }
         else
         {

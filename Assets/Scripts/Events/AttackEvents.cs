@@ -29,8 +29,8 @@ public class AttackEvent : GameEvent
             List<int> candidateCardInstanceIDs = gameEngine.State.Players[1 - AttackerPlayerID].Field.ConvertAll(c => c.CardInstanceID);
             if(candidateCardInstanceIDs.Count == 0)
             {
-                //如果没有可选目标，直接调用gameEngine.BeginAttack方法，开始攻击流程
-                gameEngine.BeginAttack(AttackerPlayerID, AttackCardInstanceID, -1);
+                gameEngine.EventQueue.Enqueue(
+                    new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, -1));
                 return;
             }
             gameEngine.EventQueue.RequestChoice(new PendingChoice
@@ -42,9 +42,19 @@ public class AttackEvent : GameEvent
             }, gameEngine, this);
             return;
         }
+        //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
+        foreach(var effect in attackCard.CardData.CardEffects)
+        {
+            if(effect.Trigger == EffectTrigger.OnAttack)
+            {
+                gameEngine.EventQueue.Enqueue(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
+            }
+        }
 
-        //TODO:如果不需要选择目标，直接调用gameEngine.AttackDecision方法，开始攻击流程
-        gameEngine.BeginAttack(AttackerPlayerID, AttackCardInstanceID, -1);
+        // 如果不需要选择目标，则把开始攻击压入事件队列，等待处理
+        //这样即使攻击卡牌中触发了很多个效果事件，都不会影响最后攻击流程的执行。
+        gameEngine.EventQueue.Enqueue(
+            new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, -1));
         
     }
 
@@ -54,7 +64,20 @@ public class AttackEvent : GameEvent
         //TODO:调用gameEngine.AttackDecision方法，并传入阻挡卡牌ID
         //开始攻击流程
         int targetCardInstanceID = selectedCardInstanceIDs.Count > 0 ? selectedCardInstanceIDs[0] : -1;
-        gameEngine.BeginAttack(AttackerPlayerID, AttackCardInstanceID, 
-            targetCardInstanceID);
+        //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
+        CardInstance attackCard = gameEngine.GetCardInstanceByID(AttackCardInstanceID);
+        if(attackCard != null)
+        {
+            foreach(var effect in attackCard.CardData.CardEffects)
+            {
+                if(effect.Trigger == EffectTrigger.OnAttack)
+                {
+                    gameEngine.EventQueue.Enqueue(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
+                }
+            }
+        }
+        
+        gameEngine.EventQueue.Enqueue(
+            new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, targetCardInstanceID));
     }
 }
