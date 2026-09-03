@@ -18,5 +18,4 @@ MonoBehaviour:
   Description: "\u5BF9\u65B9\u529B\u91CF\u4F4E\u4E8E4\u7684\u751F\u7269\u65E0\u6CD5\u963B\u6321"
   CardKeywords: 0
   CardEffects: []
-  CardFieldEffects:
-  - {fileID: 11400000, guid: 0308d2f4aa9bc74ddab573d827b21260, type: 2}
+  CardFieldEffects: []

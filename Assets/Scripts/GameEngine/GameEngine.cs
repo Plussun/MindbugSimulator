@@ -176,6 +176,8 @@ public class GameEngine
         }
         Debug.Log("玩家" + playerID + "的牌库已洗牌");
     }
+    
+    //从手牌中打出卡牌
     public void PlayCard(int playerID, int cardInstanceID)
     {
         // 检查当前游戏阶段是否允许出牌
@@ -227,22 +229,30 @@ public class GameEngine
             && useMindbug)
         {
             // 假设使用Mindbug
-        
-            DeployCard(State.ExpectedPlayerID, State.PendingCardInstance);
-            
-            State.Players[State.ExpectedPlayerID].MindbugCount-=1;
+            int deployPlayerID = State.ExpectedPlayerID;
+            int activePlayerID = State.ActivePlayerID;
+            string cardName = State.PendingCardInstance.CardData.CardName;
+
+            State.Players[deployPlayerID].MindbugCount-=1;
+            EventQueue.Enqueue(new DeployCardEvent(deployPlayerID,
+                State.PendingCardInstance.CardInstanceID));
+            EventQueue.Enqueue(new StartNextTurnEvent(activePlayerID, true));
+            EventQueue.ProcessEvent(this);
+
             Debug.Log("玩家" + playerID + "使用了Mindbug，卡牌" 
-            + State.PendingCardInstance.CardData.CardName + "加入到玩家" + State.ExpectedPlayerID + "的场上");
-            StartNextTurn(State.ActivePlayerID, true); // 保持当前回合玩家不变，开始下一回合
+            + cardName + "加入到玩家" + deployPlayerID + "的场上");
   
         }
         else
         {
             //如果没有使用mindbug，则将卡牌加入到当前回合玩家的场上,切换另一个玩家
-            
-            DeployCard(State.ActivePlayerID, State.PendingCardInstance);
+            int activePlayerID = State.ActivePlayerID;
 
-            StartNextTurn(State.ActivePlayerID, false); // 切换到另一个玩家
+            EventQueue.Enqueue(new DeployCardEvent(activePlayerID,
+                State.PendingCardInstance.CardInstanceID));
+            EventQueue.Enqueue(new StartNextTurnEvent(activePlayerID, false));
+            EventQueue.ProcessEvent(this);
+
             Debug.Log("玩家" + playerID + "没有使用Mindbug");
         }
 
@@ -631,17 +641,6 @@ public class GameEngine
         {
             Debug.Log("玩家" + playerID + "没有要部署的卡牌");
         }
-        //TODO：触发部署事件
-        if(card != null && card.CardData.CardEffects != null)
-        {
-            foreach(var effect in card.CardData.CardEffects)
-            {
-                if(effect.Trigger == EffectTrigger.OnDeploy)
-                {
-                    effect.Resolve(this, playerID, card);
-                }
-            }
-        }
         RefreshFieldEffect(); // 刷新场上效果
     }
     public void DefeatCard(int playerID, int cardInstanceID)
@@ -784,6 +783,10 @@ public class GameEngine
 
     public CardInstance GetCardInstanceByID(int cardInstanceID)
     {
+        if(State.PendingCardInstance != null && State.PendingCardInstance.CardInstanceID == cardInstanceID)
+        {
+            return State.PendingCardInstance;
+        }
         foreach(var player in State.Players)
         {
             foreach(var card in player.Hand)
@@ -815,6 +818,7 @@ public class GameEngine
                 }
             }
         }
+        
         return null; // 如果没有找到对应的卡牌实例，返回null
     }
     

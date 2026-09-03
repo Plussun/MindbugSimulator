@@ -111,11 +111,11 @@ public class ViewController : MonoBehaviour
         RefreshDeckCount(false, opponentPlayerDeckCount);
 
         RefreshDiscardCount(true, localPlayerDiscard.Length);
-        RefreshDiscardPilePannel(true, localPlayerDiscard);
+        RefreshDiscardPilePannel(true, localPlayerDiscard,pendingChoice);
 
         RefreshDiscardCount(false, opponentPlayerDiscard.Length);
-        RefreshDiscardPilePannel(false, opponentPlayerDiscard);
-        
+        RefreshDiscardPilePannel(false, opponentPlayerDiscard,pendingChoice);
+
         RefreshButtons(localPlayerMindbugCount,pendingTarget);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
         
@@ -287,7 +287,8 @@ public class ViewController : MonoBehaviour
     }
 
     public void RefreshDiscardPilePannel(bool isLocalPlayer,
-        CardNetworkState[] DiscardPile)
+        CardNetworkState[] DiscardPile,
+        PendingChoice pendingChoice)
     {
         Transform startPoint = isLocalPlayer ? DiscardPilePannel.Find("local") : DiscardPilePannel.Find("opponent");
         // 清空现有弃牌堆视图
@@ -308,6 +309,16 @@ public class ViewController : MonoBehaviour
                 DiscardPile[i].isExhausted);
             cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
+            if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(DiscardPile[i].CardInstanceID))
+            {
+                cardView.transform.Find("Candidate").gameObject.SetActive(true);
+                cardView.SetClickAction(ChooseDecision);
+            }
+            else
+            {
+                cardView.transform.Find("Candidate").gameObject.SetActive(false);
+            }
+            
         }
     }
     public void RefreshDeckCount(bool isLocalPlayer, int deckCount)

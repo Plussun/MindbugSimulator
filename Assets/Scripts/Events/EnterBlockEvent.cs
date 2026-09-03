@@ -16,7 +16,6 @@ public class EnterBlockEvent : GameEvent
 
     public override void Resolve(GameEngine gameEngine)
     {   
-        Debug.Log("开始攻击事件触发了");
         gameEngine.BeginAttack(AttackerPlayerID, AttackCardInstanceID, TargetCardInstanceID);
         
     }

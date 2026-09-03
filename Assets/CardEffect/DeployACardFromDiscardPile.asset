@@ -9,14 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
-  m_Name: Dog
+  m_Script: {fileID: 11500000, guid: 2857362f7d03534c4ad9e2a550afe979, type: 3}
+  m_Name: DeployACardFromDiscardPile
   m_EditorClassIdentifier: 
-  CardName: Dog
-  CardDataID: 2
-  Power: 2
-  Description: "\u575A\u97E7"
-  CardKeywords: 4
-  CardEffects:
-  - {fileID: 11400000, guid: 0fc6c656e1b552e0db29180d440d8598, type: 2}
-  CardFieldEffects: []
+  Trigger: 0
+  fromLocalDiscardPile: 1
