@@ -10,6 +10,7 @@ public class ViewController : MonoBehaviour
     public Transform OpponentPlayer;
     public Transform PendingCardsContainer;
     public Transform WinnerContainer;
+    public Transform DiscardPilePannel;
 
     public Button NoBlockButton;
     public Button NoMindbugButton;
@@ -38,6 +39,15 @@ public class ViewController : MonoBehaviour
         BlockButton.onClick.AddListener(OnBlockButtonClicked);
         NoFrenzyAttackButton.onClick.AddListener(OnNoFrenzyAttackButtonClicked);
         ChooseButton.onClick.AddListener(OnChooseButtonClicked);
+
+        DiscardPilePannel.Find("CloseButton").GetComponent<Button>().
+            onClick.AddListener(() => OnDiscardPileClicked(true));
+        LocalPlayer.Find("Discard").GetComponent<DiscardPileView>().IsLocalPlayer = true;
+        LocalPlayer.Find("Discard").GetComponent<DiscardPileView>().
+            SetClickAction(OnDiscardPileClicked);
+        OpponentPlayer.Find("Discard").GetComponent<DiscardPileView>().IsLocalPlayer = false;
+        OpponentPlayer.Find("Discard").GetComponent<DiscardPileView>().
+            SetClickAction(OnDiscardPileClicked);
     }
     public void RefreshView(
         int gamePhase,
@@ -51,8 +61,8 @@ public class ViewController : MonoBehaviour
         int opponentPlayerMindbugCount,
         int localPlayerDeckCount,
         int opponentPlayerDeckCount,
-        int localPlayerDiscardCount,
-        int opponentPlayerDiscardCount,
+        CardNetworkState[] localPlayerDiscard,
+        CardNetworkState[] opponentPlayerDiscard,
         CardNetworkState[] localPlayerHand,
         CardNetworkState[] localPlayerField,
         CardNetworkState[] opponentPlayerField,
@@ -99,8 +109,13 @@ public class ViewController : MonoBehaviour
 
         RefreshDeckCount(true, localPlayerDeckCount);
         RefreshDeckCount(false, opponentPlayerDeckCount);
-        RefreshDiscardCount(true, localPlayerDiscardCount);
-        RefreshDiscardCount(false, opponentPlayerDiscardCount);
+
+        RefreshDiscardCount(true, localPlayerDiscard.Length);
+        RefreshDiscardPilePannel(true, localPlayerDiscard);
+
+        RefreshDiscardCount(false, opponentPlayerDiscard.Length);
+        RefreshDiscardPilePannel(false, opponentPlayerDiscard);
+        
         RefreshButtons(localPlayerMindbugCount,pendingTarget);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
         
@@ -269,6 +284,31 @@ public class ViewController : MonoBehaviour
             isLocalPlayer ? LocalPlayer.Find("Discard") : OpponentPlayer.Find("Discard");
         TMP_Text discardText = portraitTransform.Find("DiscardCount").GetComponent<TMP_Text>();
         discardText.text = discardCount.ToString();
+    }
+
+    public void RefreshDiscardPilePannel(bool isLocalPlayer,
+        CardNetworkState[] DiscardPile)
+    {
+        Transform startPoint = isLocalPlayer ? DiscardPilePannel.Find("local") : DiscardPilePannel.Find("opponent");
+        // 清空现有弃牌堆视图
+        foreach (Transform child in startPoint)
+        {
+            Destroy(child.gameObject);
+        }
+        // 创建新的弃牌堆视图
+        for(int i = 0; i < DiscardPile.Length; i++)
+        {
+            GameObject cardViewObj = Instantiate(CardViewPrefab, startPoint);
+            CardView cardView = cardViewObj.GetComponent<CardView>();
+            cardView.UpdateCardView(GetCardDataByID(DiscardPile[i].CardDataID).CardName,
+                GetCardDataByID(DiscardPile[i].CardDataID).Description,
+                DiscardPile[i].currentPower, 
+                DiscardPile[i].CardInstanceID, 
+                DiscardPile[i].keywords, 
+                DiscardPile[i].isExhausted);
+            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
+            cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
+        }
     }
     public void RefreshDeckCount(bool isLocalPlayer, int deckCount)
     {
@@ -464,7 +504,20 @@ public class ViewController : MonoBehaviour
         networkController.SkipFrenzyAttackRequest();
     }
 
-
+    public void OnDiscardPileClicked(bool isLocalPlayer)
+    {
+        DiscardPilePannel.gameObject.SetActive(!DiscardPilePannel.gameObject.activeSelf);
+        if(isLocalPlayer)
+        {
+            DiscardPilePannel.Find("local").gameObject.SetActive(true);
+            DiscardPilePannel.Find("opponent").gameObject.SetActive(false);
+        }
+        else
+        {
+            DiscardPilePannel.Find("local").gameObject.SetActive(false);
+            DiscardPilePannel.Find("opponent").gameObject.SetActive(true);
+        }
+    }
     public CardData GetCardDataByID(int cardDataID)
     {
         // 这里你需要实现根据cardDataID从你的卡牌数据库中获取CardData的逻辑
