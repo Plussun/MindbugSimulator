@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BeginAttackEvent : GameEvent
+public class EnterBlockEvent : GameEvent
 {
 
     public int AttackerPlayerID;
     public int AttackCardInstanceID;
     public int TargetCardInstanceID;
-    public BeginAttackEvent(int playerID, int cardInstanceID, int targetCardInstanceID)
+    public EnterBlockEvent(int playerID, int cardInstanceID, int targetCardInstanceID)
     {
         AttackerPlayerID = playerID;
         AttackCardInstanceID = cardInstanceID;

@@ -3,24 +3,34 @@ using System.Linq;
 using UnityEngine;
 public class EventQueue
 {
-    public Queue<GameEvent> Events { get; private set; }
+    public List<GameEvent> Events { get; private set; }
     public GameEvent WaitingEvent;
 
     public EventQueue()
     {
-        Events = new Queue<GameEvent>();
+        Events = new List<GameEvent>();
     }
 
     public void Enqueue(GameEvent gameEvent)
     {
-        Events.Enqueue(gameEvent);
+        Events.Add(gameEvent);
+    }
+
+    public void EnqueueNext(GameEvent gameEvent)
+    {
+        Events.Insert(0, gameEvent);
+    }
+    public void EqueueNextRange(List<GameEvent> gameEvents)
+    {
+        Events.InsertRange(0, gameEvents);
     }
 
     public void ProcessEvent(GameEngine gameEngine)
     {
         while (WaitingEvent == null &&Events.Count > 0)
         {
-            GameEvent nextEvent = Events.Dequeue();
+            GameEvent nextEvent = Events[0];
+            Events.RemoveAt(0);
             nextEvent.Resolve(gameEngine);
         }
     }

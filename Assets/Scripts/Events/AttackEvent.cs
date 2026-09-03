@@ -30,7 +30,7 @@ public class AttackEvent : GameEvent
             if(candidateCardInstanceIDs.Count == 0)
             {
                 gameEngine.EventQueue.Enqueue(
-                    new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, -1));
+                    new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, -1));
                 return;
             }
             gameEngine.EventQueue.RequestChoice(new PendingChoice
@@ -42,19 +42,20 @@ public class AttackEvent : GameEvent
             }, gameEngine, this);
             return;
         }
+        List<GameEvent> eventsToEnqueue = new List<GameEvent>();
         //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
         foreach(var effect in attackCard.CardData.CardEffects)
         {
             if(effect.Trigger == EffectTrigger.OnAttack)
             {
-                gameEngine.EventQueue.Enqueue(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
+                eventsToEnqueue.Add(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
             }
         }
 
         // 如果不需要选择目标，则把开始攻击压入事件队列，等待处理
         //这样即使攻击卡牌中触发了很多个效果事件，都不会影响最后攻击流程的执行。
-        gameEngine.EventQueue.Enqueue(
-            new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, -1));
+        eventsToEnqueue.Add(new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, -1));
+        gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);
         
     }
 
@@ -72,12 +73,12 @@ public class AttackEvent : GameEvent
             {
                 if(effect.Trigger == EffectTrigger.OnAttack)
                 {
-                    gameEngine.EventQueue.Enqueue(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
+                    gameEngine.EventQueue.EnqueueNext(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
                 }
             }
         }
         
         gameEngine.EventQueue.Enqueue(
-            new BeginAttackEvent(AttackerPlayerID, AttackCardInstanceID, targetCardInstanceID));
+            new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, targetCardInstanceID));
     }
 }
