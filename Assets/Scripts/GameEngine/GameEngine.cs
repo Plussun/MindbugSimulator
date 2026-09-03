@@ -410,6 +410,12 @@ public class GameEngine
             }
         }
 
+        EventQueue.Enqueue(new AfterCombatEvent());
+        EventQueue.ProcessEvent(this);
+    }
+
+    public void AfterCombat()
+    {
         //能够二次攻击的条件：
         // 攻击卡牌存在，且具有Frenzy关键词，
         // 且攻击次数小于2，且攻击卡牌仍在当前回合玩家的场上
@@ -519,6 +525,7 @@ public class GameEngine
 
     public void ResolveCombat(CardInstance attackCard, CardInstance blockCard)
     {
+        List<GameEvent> eventsToEnqueue = new List<GameEvent>();
         if (blockCard == null)
         {
             // 没有阻挡卡牌，攻击卡牌直接造成伤害
@@ -531,39 +538,39 @@ public class GameEngine
             if (blockCard.CurrentPower > attackCard.CurrentPower)
             {
                 // 阻挡成功，攻击卡牌被移除，阻挡卡牌不变
-                DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
+                eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
                 //如果攻击卡牌有剧毒关键词，则阻挡卡牌还是要死亡
                 if(attackCard.HasKeyword(Keywords.Poisonous))
                 {
-                    DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                    eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
+
                     Debug.Log("玩家" + State.ExpectedPlayerID + "的阻挡卡牌" 
                         + blockCard.CardData.CardName + "被剧毒效果移除");
-                    return;
                 }
                 Debug.Log("玩家" + State.ExpectedPlayerID + "成功阻挡了攻击");
             }
             else if (blockCard.CurrentPower == attackCard.CurrentPower)
             {
                 // 双方力量值相等，双方都被移除
-                DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
-                DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
+                eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
                 Debug.Log("双方力量值相等，双方都被移除");
             }
             else
             {
                 // 阻挡失败，阻挡卡牌被移除
-                DefeatCard(State.ExpectedPlayerID, blockCard.CardInstanceID);
+                eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
                 Debug.Log("玩家" + State.ExpectedPlayerID + "阻挡失败，阻挡卡牌被移除");
                 //如果阻挡卡牌有剧毒关键词，则攻击卡牌还是要死亡
                 if(blockCard.HasKeyword(Keywords.Poisonous))
                 {
-                    DefeatCard(State.ActivePlayerID, attackCard.CardInstanceID);
+                    eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
                     Debug.Log("玩家" + State.ActivePlayerID + "的攻击卡牌" 
                         + attackCard.CardData.CardName + "被剧毒效果移除");
-                    return;
                 }
             }
         }
+        EventQueue.EqueueNextRange(eventsToEnqueue);
     }
 
     public void StartNextTurn(int playerID, bool keepActivePlayer)
@@ -624,7 +631,7 @@ public class GameEngine
         }
         else
         {
-            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为" 
+            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为"
                 + cardInstanceID + "的卡牌");
         }
     }
@@ -643,47 +650,35 @@ public class GameEngine
         }
         RefreshFieldEffect(); // 刷新场上效果
     }
-    public void DefeatCard(int playerID, int cardInstanceID)
+    //返回true表示卡牌真正被击败并进入弃牌堆，false表示击败被Tough抵消或未找到卡牌
+    public bool DefeatCard(int playerID, int cardInstanceID)
     {
         PlayerState player = State.Players[playerID];
         CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
 
-        if(card != null)
+        if(card == null)
         {
-            //处理坚韧关键词，检测其是否横置
-            if (card.HasKeyword(Keywords.Tough))
-            {
-                if (!card.IsExhausted)
-                {
-                    card.IsExhausted = true;
-                    return;
-                }
-            }
-
-            card.ClearTempEffects(); // 清除临时效果
-            player.Field.Remove(card);
-            player.DiscardPile.Add(card);
-            Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
-            //触发阵亡事件
-            if(card.CardData.CardEffects != null)
-            {
-                foreach(var effect in card.CardData.CardEffects)
-                {
-                    if(effect.Trigger == EffectTrigger.OnDefeat)
-                    {
-                        effect.Resolve(this, playerID, card);
-                    }
-                }
-            }
-            
-        }
-        else
-        {
-            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为" 
+            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为"
                 + cardInstanceID + "的卡牌");
+            return false;
         }
-        
+
+        //处理坚韧关键词，检测其是否横置
+        if (card.HasKeyword(Keywords.Tough))
+        {
+            if (!card.IsExhausted)
+            {
+                card.IsExhausted = true;
+                return false;
+            }
+        }
+
+        card.ClearTempEffects(); // 清除临时效果
+        player.Field.Remove(card);
+        player.DiscardPile.Add(card);
+        Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
         RefreshFieldEffect(); // 刷新场上效果
+        return true;
     }
 
     public void DiscardCard(int playerID, int cardInstanceID)

@@ -67,17 +67,16 @@ public class AttackEvent : GameEvent
         int targetCardInstanceID = selectedCardInstanceIDs.Count > 0 ? selectedCardInstanceIDs[0] : -1;
         //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
         CardInstance attackCard = gameEngine.GetCardInstanceByID(AttackCardInstanceID);
-        if(attackCard != null)
+        List<GameEvent> eventsToEnqueue = new List<GameEvent>();
+        //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
+        foreach(var effect in attackCard.CardData.CardEffects)
         {
-            foreach(var effect in attackCard.CardData.CardEffects)
+            if(effect.Trigger == EffectTrigger.OnAttack)
             {
-                if(effect.Trigger == EffectTrigger.OnAttack)
-                {
-                    gameEngine.EventQueue.EnqueueNext(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
-                }
+                eventsToEnqueue.Add(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
             }
         }
-        
+        gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);
         gameEngine.EventQueue.Enqueue(
             new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, targetCardInstanceID));
     }
