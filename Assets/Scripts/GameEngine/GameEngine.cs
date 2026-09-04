@@ -648,7 +648,8 @@ public class GameEngine
         if(card != null)
         {
             card.BasePower += amount;
-            card.UpdatePowerAndKeywords();
+            //永久力量变化可能改变依赖力量的其他场上效果，因此需要完整刷新。
+            RefreshFieldEffect();
             Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName 
                 + "的力量值变化为" + card.CurrentPower);
         }
@@ -702,6 +703,35 @@ public class GameEngine
         }
 
         RefreshFieldEffect();
+    }
+
+    public void StealRandomHandCards(int playerID, int count)
+    {
+        PlayerState player = State.Players[playerID];
+        PlayerState opponent = State.Players[1 - playerID];
+        int stealCount = Mathf.Min(count, opponent.Hand.Count);
+        List<CardInstance> availableCards = new List<CardInstance>(opponent.Hand);
+        List<CardInstance> cardsToSteal = new List<CardInstance>();
+
+        for(int i = 0; i < stealCount; i++)
+        {
+            int randomIndex = Random.Range(0, availableCards.Count);
+            cardsToSteal.Add(availableCards[randomIndex]);
+            availableCards.RemoveAt(randomIndex);
+        }
+
+        foreach(CardInstance card in cardsToSteal)
+        {
+            opponent.Hand.Remove(card);
+            player.Hand.Add(card);
+            Debug.Log("玩家" + playerID + "从对手手中偷取了卡牌"
+                + card.CardData.CardName);
+        }
+
+        if(cardsToSteal.Count > 0)
+        {
+            Refill(opponent.PlayerID);
+        }
     }
 
     //先统一判断所有卡牌的Tough，再把真正被击败的卡牌一起移入弃牌堆
@@ -783,8 +813,11 @@ public class GameEngine
     public void RefreshFieldEffect()
     {
         ClearAllOnFieldEffect();
-        //先计算普通力量效果，再计算依赖力量的关键词效果，最后计算阻挡限制。
+        //每一阶段都先让全部效果写入Temp，再统一更新Current。
+        //这样同一阶段读取的是相同快照，结果不会受到卡牌遍历顺序影响。
         List<(CardFieldEffect effect, int playerID, CardInstance card)> afterPowerUpdateEffects =
+            new List<(CardFieldEffect, int, CardInstance)>();
+        List<(CardFieldEffect effect, int playerID, CardInstance card)> afterKeywordUpdateEffects =
             new List<(CardFieldEffect, int, CardInstance)>();
         List<(CardFieldEffect effect, int playerID, CardInstance card)> afterCardUpdateEffects =
             new List<(CardFieldEffect, int, CardInstance)>();
@@ -801,6 +834,10 @@ public class GameEngine
                         {
                             afterCardUpdateEffects.Add((fieldEffect, player.PlayerID, card));
                         }
+                        else if(fieldEffect.ResolveAfterKeywordUpdate)
+                        {
+                            afterKeywordUpdateEffects.Add((fieldEffect, player.PlayerID, card));
+                        }
                         else if(fieldEffect.ResolveAfterPowerUpdate)
                         {
                             afterPowerUpdateEffects.Add((fieldEffect, player.PlayerID, card));
@@ -813,8 +850,11 @@ public class GameEngine
                 }
             }
         }
+
+        //第一层完成：提交普通力量和不依赖力量的关键词效果。
         UpdateAllFieldCardPowerAndKeywords();
 
+        //第二层：使用第一层确定的CurrentPower处理力量筛选类关键词效果。
         foreach(var afterPowerUpdateEffect in afterPowerUpdateEffects)
         {
             afterPowerUpdateEffect.effect.Resolve(
@@ -824,6 +864,18 @@ public class GameEngine
         }
         UpdateAllFieldCardPowerAndKeywords();
 
+        //第三层：读取已经确定的普通关键词，计算复制关键词效果。
+        //循环内不更新Current，保证所有复制效果读取同一份关键词快照。
+        foreach(var afterKeywordUpdateEffect in afterKeywordUpdateEffects)
+        {
+            afterKeywordUpdateEffect.effect.Resolve(
+                this,
+                afterKeywordUpdateEffect.playerID,
+                afterKeywordUpdateEffect.card);
+        }
+        UpdateAllFieldCardPowerAndKeywords();
+
+        //第四层：使用最终力量和关键词生成阻挡等规则限制。
         foreach(var afterCardUpdateEffect in afterCardUpdateEffects)
         {
             afterCardUpdateEffect.effect.Resolve(
