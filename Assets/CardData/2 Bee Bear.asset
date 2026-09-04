@@ -20,4 +20,4 @@ MonoBehaviour:
   CardKeywords: 0
   CardEffects: []
   CardFieldEffects:
-  - {fileID: 11400000, guid: a74396a3573d9ea2da5309bc3b39a995, type: 2}
+  - {fileID: 11400000, guid: 02c5eba86661c2073b8bf4ca69585b0c, type: 2}

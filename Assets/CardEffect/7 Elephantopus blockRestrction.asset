@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90e66cc261374ccfbe0d478618ff7544, type: 3}
   m_Name: 7 Elephantopus blockRestrction
   m_EditorClassIdentifier: 
-  MinimumPowerToBlock: 0
+  MinimumPowerToBlock: 5

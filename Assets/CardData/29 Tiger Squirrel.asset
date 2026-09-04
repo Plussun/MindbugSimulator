@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
+  m_Name: 29 Tiger Squirrel
+  m_EditorClassIdentifier: 
+  CardName: "\u864E\u677E\u9F20"
+  CardDataID: 29
+  Power: 3
+  Description: "\u6253\u51FA\uFF1A\u51FB\u8D25\u4E00\u4E2A\u529B\u91CF\u4E3A7\u6216\u66F4\u4F4E\u7684\u654C\u65B9\u751F\u7269\u3002"
+  Copies: 2
+  CardKeywords: 1
+  CardEffects:
+  - {fileID: 11400000, guid: baadf74d0505cf2ce98875cc7ca04000, type: 2}
+  CardFieldEffects: []

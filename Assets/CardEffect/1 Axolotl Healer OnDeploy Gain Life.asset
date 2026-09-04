@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: 1 Axolotl Healer OnDeploy Gain Life
   m_EditorClassIdentifier: 
   Trigger: 0
-  LifeToAdd: 0
+  LifeToAdd: 2
+  isOwnerPlayer: 1

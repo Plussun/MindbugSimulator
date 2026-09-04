@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6854640cba3768ddaaf8226964d9974f, type: 3}
   m_Name: 24 ShieldBugs otherAlliedGainPower
   m_EditorClassIdentifier: 
-  PowerToAdd: 0
+  PowerToAdd: 1
   KeywordsToAdd: 0
   OnlyOnOwnerTurn: 0
   MinPower: -1

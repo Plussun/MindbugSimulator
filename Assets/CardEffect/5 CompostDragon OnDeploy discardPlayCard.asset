@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: 5 CompostDragon OnDeploy discardPlayCard
   m_EditorClassIdentifier: 
   Trigger: 0
-  fromLocalDiscardPile: 0
+  fromLocalDiscardPile: 1

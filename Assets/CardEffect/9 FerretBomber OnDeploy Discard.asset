@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: 9 FerretBomber OnDeploy Discard
   m_EditorClassIdentifier: 
   Trigger: 0
-  CardsToDiscard: 0
+  CardsToDiscard: 2
   random: 0

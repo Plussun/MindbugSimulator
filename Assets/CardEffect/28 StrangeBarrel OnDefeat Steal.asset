@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6ac47d050cc4a11b4d7567100099de8, type: 3}
   m_Name: 28 StrangeBarrel OnDefeat Steal
   m_EditorClassIdentifier: 
-  Trigger: 0
+  Trigger: 3
   CardsToSteal: 2

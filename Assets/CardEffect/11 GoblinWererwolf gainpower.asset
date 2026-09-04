@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29d65b3450034ce299971344e94660bc, type: 3}
   m_Name: 11 GoblinWererwolf gainpower
   m_EditorClassIdentifier: 
-  OnlyOnOwnerTurn: 0
+  OnlyOnOwnerTurn: 1
   OnlyAlliedCreature: 0
-  PowerToAdd: 0
+  PowerToAdd: 6
   KeywordsToAdd: 0

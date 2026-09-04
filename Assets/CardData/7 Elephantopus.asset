@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 7 Elephantopus
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
+  CardName: "\u8C61\u7AE0\u9C7C"
+  CardDataID: 7
+  Power: 7
+  Description: "\u5BF9\u624B\u4E0D\u80FD\u7528\u529B\u91CF\u4E3A4\u6216\u66F4\u4F4E\u7684\u751F\u7269\u8FDB\u884C\u963B\u6321\u3002"
   Copies: 1
-  CardKeywords: 0
+  CardKeywords: 4
   CardEffects: []
-  CardFieldEffects: []
+  CardFieldEffects:
+  - {fileID: 11400000, guid: c63715a27f4204c5a95760f0537c2841, type: 2}

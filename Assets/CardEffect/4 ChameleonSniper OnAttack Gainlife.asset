@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9757c8e9735f585d8440297a8b3bff7, type: 3}
   m_Name: 4 ChameleonSniper OnAttack Gainlife
   m_EditorClassIdentifier: 
-  Trigger: 0
-  LifeToAdd: 0
-  isOwnerPlayer: 1
+  Trigger: 1
+  LifeToAdd: -1
+  isOwnerPlayer: 0

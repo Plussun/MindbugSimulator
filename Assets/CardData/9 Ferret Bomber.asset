@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 9 Ferret Bomber
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
-  Copies: 1
-  CardKeywords: 0
-  CardEffects: []
+  CardName: "\u96EA\u8C82\u8F70\u70B8\u624B"
+  CardDataID: 9
+  Power: 2
+  Description: "\u6253\u51FA\uFF1A\u5BF9\u624B\u5F03\u63892\u5F20\u724C\u3002"
+  Copies: 2
+  CardKeywords: 1
+  CardEffects:
+  - {fileID: 11400000, guid: 1e6ac3a5181144ddda31574a6a08f1b5, type: 2}
   CardFieldEffects: []

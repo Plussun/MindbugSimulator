@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad43241910aa2efbc80bfaef18954fd2, type: 3}
   m_Name: 31 TuskedExtorter OnAttack Discard
   m_EditorClassIdentifier: 
-  Trigger: 0
-  CardsToDiscard: 0
+  Trigger: 1
+  CardsToDiscard: 1
   random: 0

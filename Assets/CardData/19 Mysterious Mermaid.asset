@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
+  m_Name: 19 Mysterious Mermaid
+  m_EditorClassIdentifier: 
+  CardName: "\u795E\u79D8\u7F8E\u4EBA\u9C7C"
+  CardDataID: 19
+  Power: 7
+  Description: "\u6253\u51FA\uFF1A\u5C06\u4F60\u7684\u751F\u547D\u503C\u53D8\u4E3A\u4E0E\u5BF9\u624B\u76F8\u540C\u3002"
+  Copies: 1
+  CardKeywords: 0
+  CardEffects:
+  - {fileID: 11400000, guid: b737dc830c3c03fb696b4e2cbf77533a, type: 2}
+  CardFieldEffects: []

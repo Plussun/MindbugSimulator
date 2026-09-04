@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6854640cba3768ddaaf8226964d9974f, type: 3}
   m_Name: 32 UrchinHurler alliedPower
   m_EditorClassIdentifier: 
-  PowerToAdd: 0
+  PowerToAdd: 2
   KeywordsToAdd: 0
-  OnlyOnOwnerTurn: 0
+  OnlyOnOwnerTurn: 1
   MinPower: -1
   MaxPower: -1

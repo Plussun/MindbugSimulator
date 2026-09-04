@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: 29 TigerSquirrel OnDeploy Defeat Cards
   m_EditorClassIdentifier: 
   Trigger: 0
-  MaxCount: 0
-  MinCount: 0
+  MaxCount: 1
+  MinCount: 1
   DefeatAll: 0
-  MaxPower: -1
+  MaxPower: 7
   MinPower: -1
   CanTargetAlliedCards: 0
   OnlyIfFewerCreatures: 0

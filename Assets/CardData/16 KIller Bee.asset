@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
+  m_Name: 16 KIller Bee
+  m_EditorClassIdentifier: 
+  CardName: "\u6740\u624B\u8702"
+  CardDataID: 16
+  Power: 5
+  Description: "\u6253\u51FA\uFF1A\u5BF9\u624B\u5931\u53BB1\u70B9\u751F\u547D\u3002"
+  Copies: 2
+  CardKeywords: 16
+  CardEffects:
+  - {fileID: 11400000, guid: 34fd898c83e872ba2894d1c67bc0bbe1, type: 2}
+  CardFieldEffects: []

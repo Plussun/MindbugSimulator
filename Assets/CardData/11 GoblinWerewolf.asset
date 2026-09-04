@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
+  m_Name: 11 GoblinWerewolf
+  m_EditorClassIdentifier: 
+  CardName: "\u54E5\u5E03\u6797\u72FC\u4EBA"
+  CardDataID: 11
+  Power: 2
+  Description: "\u5728\u4F60\u7684\u56DE\u5408\u4E2D\uFF0C\u5B83\u83B7\u5F97+6\u529B\u91CF\u3002"
+  Copies: 2
+  CardKeywords: 16
+  CardEffects: []
+  CardFieldEffects:
+  - {fileID: 11400000, guid: 99fc5c3828ae9fd17819adf73a928dfb, type: 2}

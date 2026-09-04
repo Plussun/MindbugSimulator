@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 4 Chameleon Sniper
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
+  CardName: "\u53D8\u8272\u9F99\u72D9\u51FB\u624B"
+  CardDataID: 4
+  Power: 1
+  Description: "\u653B\u51FB\uFF1A\u5BF9\u624B\u5931\u53BB1\u70B9\u751F\u547D\u3002"
   Copies: 1
-  CardKeywords: 0
-  CardEffects: []
+  CardKeywords: 1
+  CardEffects:
+  - {fileID: 11400000, guid: 9a1a37012f6e601b08033827af16de33, type: 2}
   CardFieldEffects: []

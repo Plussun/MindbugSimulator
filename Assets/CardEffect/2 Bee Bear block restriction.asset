@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b398ab77954144a5a7a99ca33eb2828f, type: 3}
   m_Name: 2 Bee Bear block restriction
   m_EditorClassIdentifier: 
-  MinimumPowerToBlock: 0
+  MinimumPowerToBlock: 6

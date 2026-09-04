@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a2c31ba60d04f21907a1d92248426c6, type: 3}
   m_Name: 25 SnailHydra OnAttack Defeat Cards
   m_EditorClassIdentifier: 
-  Trigger: 0
-  MaxCount: 0
-  MinCount: 0
+  Trigger: 1
+  MaxCount: 1
+  MinCount: 1
   DefeatAll: 0
   MaxPower: -1
   MinPower: -1
-  CanTargetAlliedCards: 0
-  OnlyIfFewerCreatures: 0
+  CanTargetAlliedCards: 1
+  OnlyIfFewerCreatures: 1

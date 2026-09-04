@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 10 Giraffodile
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
+  CardName: "\u957F\u9888\u9CC4"
+  CardDataID: 10
+  Power: 7
+  Description: "\u6253\u51FA\uFF1A\u5C06\u4F60\u6574\u4E2A\u5F03\u724C\u5806\u4E2D\u7684\u724C\u62FF\u56DE\u624B\u4E2D\u3002"
   Copies: 1
   CardKeywords: 0
-  CardEffects: []
+  CardEffects:
+  - {fileID: 11400000, guid: 5f7f1915f7ef610609fa2bb5dce9bbb8, type: 2}
   CardFieldEffects: []

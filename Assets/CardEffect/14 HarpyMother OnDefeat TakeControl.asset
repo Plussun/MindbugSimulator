@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72d8a24f7c6e24671a59eae5a48b3f2e, type: 3}
   m_Name: 14 HarpyMother OnDefeat TakeControl
   m_EditorClassIdentifier: 
-  Trigger: 0
-  MaxCount: 0
+  Trigger: 3
+  MaxCount: 2
   MinCount: 0
-  MaxPower: -1
+  MaxPower: 5
   MinPower: -1

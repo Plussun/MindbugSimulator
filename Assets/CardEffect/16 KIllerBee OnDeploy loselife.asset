@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: 16 KIllerBee OnDeploy loselife
   m_EditorClassIdentifier: 
   Trigger: 0
-  LifeToAdd: 0
-  isOwnerPlayer: 1
+  LifeToAdd: -1
+  isOwnerPlayer: 0

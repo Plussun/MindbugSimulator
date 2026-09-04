@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
+  m_Name: 25 Snail Hydra
+  m_EditorClassIdentifier: 
+  CardName: "\u8717\u725B\u4E5D\u5934\u86C7"
+  CardDataID: 25
+  Power: 9
+  Description: "\u653B\u51FB\uFF1A\u5982\u679C\u4F60\u64CD\u63A7\u7684\u751F\u7269\u6BD4\u5BF9\u624B\u5C11\uFF0C\u51FB\u8D25\u4E00\u4E2A\u751F\u7269\u3002"
+  Copies: 2
+  CardKeywords: 0
+  CardEffects:
+  - {fileID: 11400000, guid: 0e758abb9f5153222a37edc5d025a33c, type: 2}
+  CardFieldEffects: []

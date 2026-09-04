@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: 17 LoneYeti modifyPower
   m_EditorClassIdentifier: 
   OnlyOnOwnerTurn: 0
-  OnlyAlliedCreature: 0
-  PowerToAdd: 0
-  KeywordsToAdd: 0
+  OnlyAlliedCreature: 1
+  PowerToAdd: 5
+  KeywordsToAdd: 8

@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 6 Deathweaver
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
+  CardName: "\u6B7B\u4EA1\u7EC7\u7F51\u8005"
+  CardDataID: 6
+  Power: 2
+  Description: "\u5BF9\u624B\u4E0D\u80FD\u89E6\u53D1\u201C\u6253\u51FA\u201D\u6548\u679C\u3002"
   Copies: 1
-  CardKeywords: 0
+  CardKeywords: 2
   CardEffects: []
-  CardFieldEffects: []
+  CardFieldEffects:
+  - {fileID: 11400000, guid: a1796d8e19f533796adb0c052becc59b, type: 2}

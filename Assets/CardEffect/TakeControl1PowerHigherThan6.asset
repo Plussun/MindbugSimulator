@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TakeControl1PowerHigherThan6
   m_EditorClassIdentifier: 
   Trigger: 0
-  MaxCount: 0
-  MinCount: 0
+  MaxCount: 1
+  MinCount: 1
   MaxPower: -1
-  MinPower: -1
+  MinPower: 6

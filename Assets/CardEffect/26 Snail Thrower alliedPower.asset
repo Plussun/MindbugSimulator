@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 26 Snail Thrower alliedPower
   m_EditorClassIdentifier: 
   PowerToAdd: 0
-  KeywordsToAdd: 0
+  KeywordsToAdd: 18
   OnlyOnOwnerTurn: 0
   MinPower: -1
-  MaxPower: -1
+  MaxPower: 4

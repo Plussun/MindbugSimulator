@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
   m_Name: 5 Compost Dragon
   m_EditorClassIdentifier: 
-  CardName: 
-  CardDataID: 0
-  Power: 0
-  Description: No description provided.
-  Copies: 1
-  CardKeywords: 0
-  CardEffects: []
+  CardName: "\u5806\u80A5\u9F99"
+  CardDataID: 5
+  Power: 3
+  Description: "\u6253\u51FA\uFF1A\u4ECE\u4F60\u7684\u5F03\u724C\u5806\u4E2D\u6253\u51FA\u4E00\u5F20\u724C\u3002"
+  Copies: 2
+  CardKeywords: 16
+  CardEffects:
+  - {fileID: 11400000, guid: c599c42800dba763ab3d9fc583513d47, type: 2}
   CardFieldEffects: []
