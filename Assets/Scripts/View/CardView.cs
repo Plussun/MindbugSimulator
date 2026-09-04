@@ -11,6 +11,7 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     public TMP_Text CardNameText;
     public TMP_Text CardPowerText;
     public TMP_Text CardDescribeText;
+    public TMP_Text CardKeywordsText;
     public int CardInstanceID;
     public Keywords CurrentKeywords; // 添加一个字段来存储当前的关键词
 
@@ -32,6 +33,28 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         CardPowerText.text = currentPower.ToString();
         CurrentKeywords = (Keywords)currentKeywords;
         CardDescribeText.text = cardDescribe;
+        CardKeywordsText.text = "";
+        if(CurrentKeywords.HasFlag(Keywords.Sneaky))
+        {
+            CardKeywordsText.text += "敏捷 ";
+        }
+        if(CurrentKeywords.HasFlag(Keywords.Frenzy))
+        {
+            CardKeywordsText.text += "狂暴 ";
+        }
+        if(CurrentKeywords.HasFlag(Keywords.Hunter))
+        {
+            CardKeywordsText.text += "猎杀 ";
+        }
+        if(CurrentKeywords.HasFlag(Keywords.Poisonous))
+        {
+            CardKeywordsText.text += "剧毒 ";
+        }
+        if(CurrentKeywords.HasFlag(Keywords.Tough))
+        {
+            CardKeywordsText.text += "坚韧 ";
+        }
+
         CardInstanceID = cardInstanceID;
         // 根据isExhausted更新卡牌的横置状态
         transform.rotation = isExhausted ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;

@@ -199,7 +199,7 @@ public class ViewController : MonoBehaviour
             }
 
 
-            cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
+            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
             
             // 高亮显示当前待攻击决策的卡牌
@@ -252,7 +252,7 @@ public class ViewController : MonoBehaviour
             // 设置卡牌为背面显示
             cardView.UpdateCardView("Back", "", 0, -2, 0, false); // 使用-2表示未知的CardInstanceID，为了和未知目标的-1ID区分开
             //TODO:制作真正的卡背显示方法
-            cardView.transform.localPosition = new Vector3(i * 100, 0, 0); // 调整卡牌位置
+            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
         }
     }
