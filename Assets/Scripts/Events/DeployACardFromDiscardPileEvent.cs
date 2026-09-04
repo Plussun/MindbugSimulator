@@ -64,6 +64,7 @@ public class DeployACardFromDiscardPileEvent : GameEvent
         }
 
         discardOwner.DiscardPile.Remove(cardInstanceToDeploy);
-        gameEngine.DeployCard(PlayerID, cardInstanceToDeploy);
+        gameEngine.EventQueue.EnqueueNext(
+            new DeployCardEvent(PlayerID, cardInstanceToDeploy.CardInstanceID));
     }
 }

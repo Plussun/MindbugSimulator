@@ -2,36 +2,46 @@ using UnityEngine;
 using System.Collections.Generic;
 public class DefeatEvent : GameEvent
 {
-    public int PlayerID;
-    public int CardInstanceID;
+    public List<(int playerID, int cardInstanceID)> Targets;
 
+    //单张卡牌被击败
     public DefeatEvent(int playerID, int cardInstanceID)
     {
-        PlayerID = playerID;
-        CardInstanceID = cardInstanceID;
+        Targets = new List<(int, int)>
+        {
+            (playerID, cardInstanceID)
+        };
+    }
+
+    //多张卡牌同时被击败
+    public DefeatEvent(List<(int playerID, int cardInstanceID)> targets)
+    {
+        Targets = targets;
     }
 
     public override void Resolve(GameEngine gameEngine)
     {
-        CardInstance cardInstance = gameEngine.GetCardInstanceByID(CardInstanceID);
-        if (cardInstance == null)
-        {
-            Debug.LogError("找不到卡牌实例");
-            return; 
-        }
-        //Tough抵消本次击败时，不触发OnDefeat效果
-        if(!gameEngine.DefeatCard(PlayerID, CardInstanceID))
-        {
-            return;
-        }
+        //先处理所有卡牌的离场，再触发真正阵亡卡牌的OnDefeat效果
+        List<(int playerID, CardInstance card)> defeatedCards =
+            gameEngine.DefeatCard(Targets);
 
         List<GameEvent> eventsToEnqueue = new List<GameEvent>();
-        //加入OnDefeat事件处理，触发卡牌的OnDefeat效果
-        foreach(var effect in cardInstance.CardData.CardEffects)
+        foreach(var defeatedCard in defeatedCards)
         {
-            if(effect.Trigger == EffectTrigger.OnDefeat)
+            if(defeatedCard.card.CardData.CardEffects == null)
             {
-                eventsToEnqueue.Add(new CardEffectEvent(effect, PlayerID, CardInstanceID));
+                continue;
+            }
+
+            foreach(var effect in defeatedCard.card.CardData.CardEffects)
+            {
+                if(effect.Trigger == EffectTrigger.OnDefeat)
+                {
+                    eventsToEnqueue.Add(new CardEffectEvent(
+                        effect,
+                        defeatedCard.playerID,
+                        defeatedCard.card.CardInstanceID));
+                }
             }
         }
         gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);

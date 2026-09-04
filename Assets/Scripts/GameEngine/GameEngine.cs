@@ -304,6 +304,7 @@ public class GameEngine
 
     public void BeginAttack(int playerID, int cardInstanceID, int targetCardInstanceID)
     {
+        State.PendingHunterTargetCardInstance = null; // 清除之前的狩猎目标卡牌实例
         //TODO:在攻击决策做出判断后，执行攻击流程
         if(State.PendingAttackCardInstance != null)
         {
@@ -525,7 +526,9 @@ public class GameEngine
 
     public void ResolveCombat(CardInstance attackCard, CardInstance blockCard)
     {
-        List<GameEvent> eventsToEnqueue = new List<GameEvent>();
+        List<(int playerID, int cardInstanceID)> defeatTargets =
+            new List<(int, int)>();
+
         if (blockCard == null)
         {
             // 没有阻挡卡牌，攻击卡牌直接造成伤害
@@ -538,11 +541,13 @@ public class GameEngine
             if (blockCard.CurrentPower > attackCard.CurrentPower)
             {
                 // 阻挡成功，攻击卡牌被移除，阻挡卡牌不变
-                eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
+                defeatTargets.Add(
+                    (State.ActivePlayerID, attackCard.CardInstanceID));
                 //如果攻击卡牌有剧毒关键词，则阻挡卡牌还是要死亡
                 if(attackCard.HasKeyword(Keywords.Poisonous))
                 {
-                    eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
+                    defeatTargets.Add(
+                        (State.ExpectedPlayerID, blockCard.CardInstanceID));
 
                     Debug.Log("玩家" + State.ExpectedPlayerID + "的阻挡卡牌" 
                         + blockCard.CardData.CardName + "被剧毒效果移除");
@@ -552,25 +557,32 @@ public class GameEngine
             else if (blockCard.CurrentPower == attackCard.CurrentPower)
             {
                 // 双方力量值相等，双方都被移除
-                eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
-                eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
+                defeatTargets.Add(
+                    (State.ActivePlayerID, attackCard.CardInstanceID));
+                defeatTargets.Add(
+                    (State.ExpectedPlayerID, blockCard.CardInstanceID));
                 Debug.Log("双方力量值相等，双方都被移除");
             }
             else
             {
                 // 阻挡失败，阻挡卡牌被移除
-                eventsToEnqueue.Add(new DefeatEvent(State.ExpectedPlayerID, blockCard.CardInstanceID));
+                defeatTargets.Add(
+                    (State.ExpectedPlayerID, blockCard.CardInstanceID));
                 Debug.Log("玩家" + State.ExpectedPlayerID + "阻挡失败，阻挡卡牌被移除");
                 //如果阻挡卡牌有剧毒关键词，则攻击卡牌还是要死亡
                 if(blockCard.HasKeyword(Keywords.Poisonous))
                 {
-                    eventsToEnqueue.Add(new DefeatEvent(State.ActivePlayerID, attackCard.CardInstanceID));
+                    defeatTargets.Add(
+                        (State.ActivePlayerID, attackCard.CardInstanceID));
                     Debug.Log("玩家" + State.ActivePlayerID + "的攻击卡牌" 
                         + attackCard.CardData.CardName + "被剧毒效果移除");
                 }
             }
         }
-        EventQueue.EqueueNextRange(eventsToEnqueue);
+        if(defeatTargets.Count > 0)
+        {
+            EventQueue.EnqueueNext(new DefeatEvent(defeatTargets));
+        }
     }
 
     public void StartNextTurn(int playerID, bool keepActivePlayer)
@@ -650,35 +662,50 @@ public class GameEngine
         }
         RefreshFieldEffect(); // 刷新场上效果
     }
-    //返回true表示卡牌真正被击败并进入弃牌堆，false表示击败被Tough抵消或未找到卡牌
-    public bool DefeatCard(int playerID, int cardInstanceID)
+    //先统一判断所有卡牌的Tough，再把真正被击败的卡牌一起移入弃牌堆
+    public List<(int playerID, CardInstance card)> DefeatCard(
+        List<(int playerID, int cardInstanceID)> targets)
     {
-        PlayerState player = State.Players[playerID];
-        CardInstance card = player.Field.Find(card => card.CardInstanceID == cardInstanceID);
+        List<(int playerID, CardInstance card)> defeatedCards =
+            new List<(int, CardInstance)>();
 
-        if(card == null)
+        //第一轮只判断结果，避免先离场的卡牌改变其他卡牌的场上效果
+        foreach(var target in targets)
         {
-            Debug.Log("玩家" + playerID + "没有找到卡牌实例ID为"
-                + cardInstanceID + "的卡牌");
-            return false;
-        }
+            PlayerState player = State.Players[target.playerID];
+            CardInstance card = player.Field.Find(
+                card => card.CardInstanceID == target.cardInstanceID);
 
-        //处理坚韧关键词，检测其是否横置
-        if (card.HasKeyword(Keywords.Tough))
-        {
-            if (!card.IsExhausted)
+            if(card == null)
+            {
+                Debug.Log("玩家" + target.playerID + "没有找到卡牌实例ID为"
+                    + target.cardInstanceID + "的卡牌");
+                continue;
+            }
+
+            //Tough抵消本次击败，不会触发OnDefeat效果
+            if(card.HasKeyword(Keywords.Tough) && !card.IsExhausted)
             {
                 card.IsExhausted = true;
-                return false;
+                continue;
             }
+
+            defeatedCards.Add((target.playerID, card));
         }
 
-        card.ClearTempEffects(); // 清除临时效果
-        player.Field.Remove(card);
-        player.DiscardPile.Add(card);
-        Debug.Log("玩家" + playerID + "的卡牌" + card.CardData.CardName + "被击败，移至弃牌堆");
-        RefreshFieldEffect(); // 刷新场上效果
-        return true;
+        //第二轮一起移动所有真正被击败的卡牌
+        foreach(var defeatedCard in defeatedCards)
+        {
+            PlayerState player = State.Players[defeatedCard.playerID];
+            defeatedCard.card.ClearTempEffects();
+            player.Field.Remove(defeatedCard.card);
+            player.DiscardPile.Add(defeatedCard.card);
+            Debug.Log("玩家" + defeatedCard.playerID + "的卡牌"
+                + defeatedCard.card.CardData.CardName + "被击败，移至弃牌堆");
+        }
+
+        RefreshFieldEffect(); // 所有卡牌处理完成后统一刷新场上效果
+        return defeatedCards;
     }
 
     public void DiscardCard(int playerID, int cardInstanceID)

@@ -27,20 +27,17 @@ public class AttackEvent : GameEvent
         if(attackCard.CurrentKeywords.HasFlag(Keywords.Hunter))
         {
             List<int> candidateCardInstanceIDs = gameEngine.State.Players[1 - AttackerPlayerID].Field.ConvertAll(c => c.CardInstanceID);
-            if(candidateCardInstanceIDs.Count == 0)
+            if(candidateCardInstanceIDs.Count > 0)
             {
-                gameEngine.EventQueue.Enqueue(
-                    new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, -1));
+                gameEngine.EventQueue.RequestChoice(new PendingChoice
+                {
+                    PlayerID = AttackerPlayerID,
+                    MaxSelectCount = 1,
+                    MinSelectCount = 0,
+                    CandidateCardInstanceIDs = candidateCardInstanceIDs
+                }, gameEngine, this);
                 return;
             }
-            gameEngine.EventQueue.RequestChoice(new PendingChoice
-            {
-                PlayerID = AttackerPlayerID,
-                MaxSelectCount = 1,
-                MinSelectCount = 0,
-                CandidateCardInstanceIDs = candidateCardInstanceIDs
-            }, gameEngine, this);
-            return;
         }
         List<GameEvent> eventsToEnqueue = new List<GameEvent>();
         //加入OnAttack事件处理，触发攻击卡牌的OnAttack效果
@@ -76,8 +73,10 @@ public class AttackEvent : GameEvent
                 eventsToEnqueue.Add(new CardEffectEvent(effect, AttackerPlayerID, AttackCardInstanceID));
             }
         }
-        gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);
-        gameEngine.EventQueue.Enqueue(
+        
+        eventsToEnqueue.Add(
             new EnterBlockEvent(AttackerPlayerID, AttackCardInstanceID, targetCardInstanceID));
+        gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);
+    
     }
 }
