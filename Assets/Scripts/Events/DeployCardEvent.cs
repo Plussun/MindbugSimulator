@@ -20,11 +20,17 @@ public class DeployCardEvent : GameEvent
         }
         List<GameEvent> eventsToEnqueue = new List<GameEvent>();
         //加入OnDeploy事件处理，触发卡牌的OnDeploy效果
-        foreach(var effect in CardInstanceToDeploy.CardData.CardEffects)
+        if(gameEngine.CanTriggerEffect(PlayerID, EffectTrigger.OnDeploy))
         {
-            if(effect.Trigger == EffectTrigger.OnDeploy)
+            foreach(var effect in CardInstanceToDeploy.CardData.CardEffects)
             {
-                eventsToEnqueue.Add(new CardEffectEvent(effect, PlayerID, CardInstanceToDeploy.CardInstanceID));
+                if(effect.Trigger == EffectTrigger.OnDeploy)
+                {
+                    eventsToEnqueue.Add(new CardEffectEvent(
+                        effect,
+                        PlayerID,
+                        CardInstanceToDeploy.CardInstanceID));
+                }
             }
         }
         gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);

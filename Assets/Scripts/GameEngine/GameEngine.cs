@@ -399,11 +399,14 @@ public class GameEngine
                 }
                 State.PendingBlockCardInstance = blockCard;
                 //触发阻挡效果
-                foreach(var effect in State.PendingBlockCardInstance.CardData.CardEffects)
+                if(CanTriggerEffect(playerID, EffectTrigger.OnBlock))
                 {
-                    if(effect.Trigger == EffectTrigger.OnBlock)
+                    foreach(var effect in State.PendingBlockCardInstance.CardData.CardEffects)
                     {
-                        effect.Resolve(this, playerID, State.PendingBlockCardInstance);
+                        if(effect.Trigger == EffectTrigger.OnBlock)
+                        {
+                            effect.Resolve(this, playerID, State.PendingBlockCardInstance);
+                        }
                     }
                 }
 
@@ -633,6 +636,11 @@ public class GameEngine
         return false; // 游戏继续
     }
 
+    public bool CanTriggerEffect(int playerID, EffectTrigger trigger)
+    {
+        return !State.Players[playerID].DisabledEffectTriggers.Contains(trigger);
+    }
+
     public void ChangeBasePower(int playerID,int cardInstanceID,int amount)
     {
         PlayerState player = State.Players[playerID];
@@ -765,6 +773,7 @@ public class GameEngine
         {
             player.GlobalForbiddenBlockerInstanceIDs.Clear();
             player.IndividualBlockRestrictions.Clear();
+            player.DisabledEffectTriggers.Clear();
             foreach(var card in player.Field)
             {
                 card.ClearTempEffects();

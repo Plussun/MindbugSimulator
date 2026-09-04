@@ -25,6 +25,8 @@ public class PlayerState
     // 该玩家面对特定攻击卡时不能用于阻挡的卡牌。
     public List<IndividualBlockRestriction> IndividualBlockRestrictions =
         new List<IndividualBlockRestriction>();
+    // 当前被场上效果禁止触发的卡牌效果时机。
+    public List<EffectTrigger> DisabledEffectTriggers = new List<EffectTrigger>();
     public int Life = 3;
     public int MindbugCount = 2;
 

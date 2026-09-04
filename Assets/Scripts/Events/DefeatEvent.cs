@@ -32,6 +32,12 @@ public class DefeatEvent : GameEvent
             {
                 continue;
             }
+            if(!gameEngine.CanTriggerEffect(
+                defeatedCard.playerID,
+                EffectTrigger.OnDefeat))
+            {
+                continue;
+            }
 
             foreach(var effect in defeatedCard.card.CardData.CardEffects)
             {
