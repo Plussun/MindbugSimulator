@@ -50,23 +50,38 @@ public class GameEngine
         Debug.Log("设置玩家" + playerID + "为等待决策的玩家");
     }
 
-    //设置基础牌库，只是用于暂时测试阶段，具体实现完48张卡需要替换。
-    public void SetAllCardsBase(List<CardData> allCardsBase)
+    //根据每种卡牌的张数，生成完整的基础牌库。
+    public void SetAllCardsBase(List<CardData> cardDatabase)
     {
         AllCardsBase.Clear();
         int instanceIDCounter = 0;
-        foreach (var cardData in allCardsBase)
+
+        foreach (CardData cardData in cardDatabase)
         {
-            instanceIDCounter++;
-            int thisInstanceID = instanceIDCounter; // 全局唯一的卡牌实例ID
-            CardInstance cardInstance = new CardInstance(cardData, thisInstanceID);
-            AllCardsBase.Add(cardInstance);
+            for (int i = 0; i < cardData.Copies; i++)
+            {
+                instanceIDCounter++;
+                CardInstance cardInstance =
+                    new CardInstance(cardData, instanceIDCounter);
+                AllCardsBase.Add(cardInstance);
+            }
         }
+
+        Debug.Log("基础牌库生成完成，共" + AllCardsBase.Count + "张牌");
     }
+
     public void SetAllCards()
     {
         State.AllCards.Clear();
-        State.AllCards = new List<CardInstance>(AllCardsBase); // 复制基础卡牌实例列表
+
+        //每局都重新创建实例，避免保留上一局的力量、关键词和横置状态。
+        foreach (CardInstance baseCard in AllCardsBase)
+        {
+            CardInstance newCard = new CardInstance(
+                baseCard.CardData,
+                baseCard.CardInstanceID);
+            State.AllCards.Add(newCard);
+        }
 
         //对所有卡牌的总牌库进行洗牌
         for (int i = 0; i < State.AllCards.Count; i++)
