@@ -116,6 +116,9 @@ public class ViewController : MonoBehaviour
         RefreshDiscardCount(false, opponentPlayerDiscard.Length);
         RefreshDiscardPilePannel(false, opponentPlayerDiscard,pendingChoice);
 
+        RefreshButtons(localPlayerMindbugCount,pendingTarget);
+        RefreshWinnerView(winnerPlayerID, localPlayerID);
+
         //等待从弃牌区选择卡牌时，自动打开对应玩家的弃牌区界面
         if(isLocalPlayerExpected &&
             currentPhase == GamePhase.WaitingForChoice)
@@ -123,15 +126,14 @@ public class ViewController : MonoBehaviour
             if(ContainsChoiceCandidate(localPlayerDiscard))
             {
                 OpenDiscardPilePannel(true);
+                ChooseButton.gameObject.SetActive(false);
             }
             else if(ContainsChoiceCandidate(opponentPlayerDiscard))
             {
                 OpenDiscardPilePannel(false);
+                ChooseButton.gameObject.SetActive(false);
             }
         }
-
-        RefreshButtons(localPlayerMindbugCount,pendingTarget);
-        RefreshWinnerView(winnerPlayerID, localPlayerID);
         
     }
 
@@ -334,6 +336,7 @@ public class ViewController : MonoBehaviour
             }
             
         }
+        
     }
     public void RefreshDeckCount(bool isLocalPlayer, int deckCount)
     {
