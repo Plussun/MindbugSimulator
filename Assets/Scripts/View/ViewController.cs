@@ -116,6 +116,20 @@ public class ViewController : MonoBehaviour
         RefreshDiscardCount(false, opponentPlayerDiscard.Length);
         RefreshDiscardPilePannel(false, opponentPlayerDiscard,pendingChoice);
 
+        //等待从弃牌区选择卡牌时，自动打开对应玩家的弃牌区界面
+        if(isLocalPlayerExpected &&
+            currentPhase == GamePhase.WaitingForChoice)
+        {
+            if(ContainsChoiceCandidate(localPlayerDiscard))
+            {
+                OpenDiscardPilePannel(true);
+            }
+            else if(ContainsChoiceCandidate(opponentPlayerDiscard))
+            {
+                OpenDiscardPilePannel(false);
+            }
+        }
+
         RefreshButtons(localPlayerMindbugCount,pendingTarget);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
         
@@ -529,6 +543,32 @@ public class ViewController : MonoBehaviour
             DiscardPilePannel.Find("opponent").gameObject.SetActive(true);
         }
     }
+
+    public void OpenDiscardPilePannel(bool isLocalPlayer)
+    {
+        DiscardPilePannel.gameObject.SetActive(true);
+        DiscardPilePannel.Find("local").gameObject.SetActive(isLocalPlayer);
+        DiscardPilePannel.Find("opponent").gameObject.SetActive(!isLocalPlayer);
+    }
+
+    private bool ContainsChoiceCandidate(CardNetworkState[] cards)
+    {
+        if(pendingChoice == null)
+        {
+            return false;
+        }
+
+        foreach(var card in cards)
+        {
+            if(pendingChoice.CandidateCardInstanceIDs.Contains(card.CardInstanceID))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public CardData GetCardDataByID(int cardDataID)
     {
         // 这里你需要实现根据cardDataID从你的卡牌数据库中获取CardData的逻辑

@@ -235,7 +235,7 @@ public class GameEngine
 
             State.Players[deployPlayerID].MindbugCount-=1;
             EventQueue.Enqueue(new DeployCardEvent(deployPlayerID,
-                State.PendingCardInstance.CardInstanceID));
+                State.PendingCardInstance));
             EventQueue.Enqueue(new StartNextTurnEvent(activePlayerID, true));
             EventQueue.ProcessEvent(this);
 
@@ -249,7 +249,7 @@ public class GameEngine
             int activePlayerID = State.ActivePlayerID;
 
             EventQueue.Enqueue(new DeployCardEvent(activePlayerID,
-                State.PendingCardInstance.CardInstanceID));
+                State.PendingCardInstance));
             EventQueue.Enqueue(new StartNextTurnEvent(activePlayerID, false));
             EventQueue.ProcessEvent(this);
 
