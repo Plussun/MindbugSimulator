@@ -613,6 +613,9 @@ public class GameEngine
         State.PendingAttackCardInstance = null;
         State.PendingBlockCardInstance = null;
         State.PendingHunterTargetCardInstance = null;
+
+        //部分场上效果只在卡牌控制者的回合中生效，切换回合后需要重新计算。
+        RefreshFieldEffect();
     }
     //玩家失去生命，返回true表示玩家死亡游戏结束，返回false表示游戏继续
     public bool LoseLife(int playerID, int amount)
