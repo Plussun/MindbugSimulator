@@ -10,14 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b30a5105e7a0af81e80772bf9002a79a, type: 3}
-  m_Name: 1 Axolotl healer
+  m_Name: 4 Chameleon Sniper
   m_EditorClassIdentifier: 
-  CardName: "\u7F8E\u897F\u8788\u6CBB\u7597\u5E08"
-  CardDataID: 1
-  Power: 4
-  Description: "\u6253\u51FA\uFF1A\u83B7\u5F972\u70B9\u751F\u547D\u3002"
-  Copies: 2
-  CardKeywords: 2
-  CardEffects:
-  - {fileID: 11400000, guid: dbaa1ab3a98cbb095abc214fff82f444, type: 2}
+  CardName: 
+  CardDataID: 0
+  Power: 0
+  Description: No description provided.
+  Copies: 1
+  CardKeywords: 0
+  CardEffects: []
   CardFieldEffects: []

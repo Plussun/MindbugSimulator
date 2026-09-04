@@ -7,7 +7,7 @@ public class CardData:ScriptableObject
     public int CardDataID;
     public int Power;
     public string Description = "No description provided.";
-    public int Count = 1;
+    public int Copies = 1;
 
     public Keywords CardKeywords;
 

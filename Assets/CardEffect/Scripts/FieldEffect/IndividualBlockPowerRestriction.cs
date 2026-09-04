@@ -18,7 +18,7 @@ public class IndividualBlockPowerRestriction : CardFieldEffect
 
         foreach(CardInstance opponentCard in gameEngine.State.Players[opponentPlayerID].Field)
         {
-            if(opponentCard.CurrentPower < MinimumPowerToBlock)
+            if(opponentCard.CurrentPower <= MinimumPowerToBlock)
             {
                 gameEngine.AddIndividualBlockRestriction(
                     opponentPlayerID,

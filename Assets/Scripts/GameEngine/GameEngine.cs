@@ -662,6 +662,37 @@ public class GameEngine
         }
         RefreshFieldEffect(); // 刷新场上效果
     }
+
+    public void TakeControlCards(
+        int newControllerPlayerID,
+        List<int> cardInstanceIDs)
+    {
+        int oldControllerPlayerID = 1 - newControllerPlayerID;
+        PlayerState oldController = State.Players[oldControllerPlayerID];
+        PlayerState newController = State.Players[newControllerPlayerID];
+        List<CardInstance> cardsToTake = new List<CardInstance>();
+
+        foreach(int cardInstanceID in cardInstanceIDs)
+        {
+            CardInstance card = oldController.Field.Find(
+                card => card.CardInstanceID == cardInstanceID);
+            if(card != null)
+            {
+                cardsToTake.Add(card);
+            }
+        }
+
+        foreach(CardInstance card in cardsToTake)
+        {
+            oldController.Field.Remove(card);
+            newController.Field.Add(card);
+            Debug.Log("玩家" + newControllerPlayerID + "获得了卡牌"
+                + card.CardData.CardName + "的控制权");
+        }
+
+        RefreshFieldEffect();
+    }
+
     //先统一判断所有卡牌的Tough，再把真正被击败的卡牌一起移入弃牌堆
     public List<(int playerID, CardInstance card)> DefeatCard(
         List<(int playerID, int cardInstanceID)> targets)
