@@ -8,42 +8,81 @@ public class DefeatOpponentCardsEvent : GameEvent
     public int MaxCount;
     public int MinPower;
     public int MaxPower;
+    public bool DefeatAll;
+    public bool CanTargetAlliedCards;
+    public bool OnlyIfFewerCreatures;
+
+    public List<(int playerID, int cardInstanceID)> CandidateTargets;
 
     public DefeatOpponentCardsEvent(
         int playerID,
         int minCount,
         int maxCount,
         int minPower,
-        int maxPower)
+        int maxPower,
+        bool defeatAll,
+        bool canTargetAlliedCards,
+        bool onlyIfFewerCreatures)
     {
         PlayerID = playerID;
         MinCount = minCount;
         MaxCount = maxCount;
         MinPower = minPower;
         MaxPower = maxPower;
+        DefeatAll = defeatAll;
+        CanTargetAlliedCards = canTargetAlliedCards;
+        OnlyIfFewerCreatures = onlyIfFewerCreatures;
+        CandidateTargets = new List<(int, int)>();
     }
 
     public override void Resolve(GameEngine gameEngine)
     {
         int opponentPlayerID = 1 - PlayerID;
+
+        if(OnlyIfFewerCreatures &&
+            gameEngine.State.Players[PlayerID].Field.Count >=
+            gameEngine.State.Players[opponentPlayerID].Field.Count)
+        {
+            Debug.Log("己方生物数量不少于对手，击败效果不生效");
+            return;
+        }
+
+        CandidateTargets.Clear();
         List<int> candidateCardInstanceIDs = new List<int>();
 
-        foreach(var card in gameEngine.State.Players[opponentPlayerID].Field)
+        foreach(var player in gameEngine.State.Players)
         {
-            if(MinPower != -1 && card.CurrentPower < MinPower)
+            if(player.PlayerID == PlayerID && !CanTargetAlliedCards)
             {
                 continue;
             }
-            if(MaxPower != -1 && card.CurrentPower > MaxPower)
+
+            foreach(var card in player.Field)
             {
-                continue;
+                if(MinPower != -1 && card.CurrentPower < MinPower)
+                {
+                    continue;
+                }
+                if(MaxPower != -1 && card.CurrentPower > MaxPower)
+                {
+                    continue;
+                }
+
+                CandidateTargets.Add((player.PlayerID, card.CardInstanceID));
+                candidateCardInstanceIDs.Add(card.CardInstanceID);
             }
-            candidateCardInstanceIDs.Add(card.CardInstanceID);
         }
 
         if(candidateCardInstanceIDs.Count == 0)
         {
-            Debug.Log("对手场上没有符合条件的生物");
+            Debug.Log("场上没有符合条件的生物");
+            return;
+        }
+
+        if(DefeatAll)
+        {
+            gameEngine.EventQueue.EnqueueNext(
+                new DefeatEvent(new List<(int, int)>(CandidateTargets)));
             return;
         }
 
@@ -60,13 +99,19 @@ public class DefeatOpponentCardsEvent : GameEvent
         GameEngine gameEngine,
         List<int> selectedCardInstanceIDs)
     {
-        int opponentPlayerID = 1 - PlayerID;
         List<(int playerID, int cardInstanceID)> defeatTargets =
             new List<(int, int)>();
 
         foreach(var cardInstanceID in selectedCardInstanceIDs)
         {
-            defeatTargets.Add((opponentPlayerID, cardInstanceID));
+            foreach(var candidateTarget in CandidateTargets)
+            {
+                if(candidateTarget.cardInstanceID == cardInstanceID)
+                {
+                    defeatTargets.Add(candidateTarget);
+                    break;
+                }
+            }
         }
 
         gameEngine.EventQueue.EnqueueNext(new DefeatEvent(defeatTargets));

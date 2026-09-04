@@ -774,9 +774,9 @@ public class GameEngine
     public void RefreshFieldEffect()
     {
         ClearAllOnFieldEffect();
-        // 阻挡限制依赖更新后的 CurrentPower 和 CurrentKeywords，
-        // 因此先暂存这类效果，在本次刷新的普通场上效果结算后再执行。
-        // 这只是 RefreshFieldEffect 内部的两阶段计算，与未来的事件队列无关。
+        //先计算普通力量效果，再计算依赖力量的关键词效果，最后计算阻挡限制。
+        List<(CardFieldEffect effect, int playerID, CardInstance card)> afterPowerUpdateEffects =
+            new List<(CardFieldEffect, int, CardInstance)>();
         List<(CardFieldEffect effect, int playerID, CardInstance card)> afterCardUpdateEffects =
             new List<(CardFieldEffect, int, CardInstance)>();
 
@@ -792,6 +792,10 @@ public class GameEngine
                         {
                             afterCardUpdateEffects.Add((fieldEffect, player.PlayerID, card));
                         }
+                        else if(fieldEffect.ResolveAfterPowerUpdate)
+                        {
+                            afterPowerUpdateEffects.Add((fieldEffect, player.PlayerID, card));
+                        }
                         else
                         {
                             fieldEffect.Resolve(this, player.PlayerID, card);
@@ -799,6 +803,15 @@ public class GameEngine
                     }
                 }
             }
+        }
+        UpdateAllFieldCardPowerAndKeywords();
+
+        foreach(var afterPowerUpdateEffect in afterPowerUpdateEffects)
+        {
+            afterPowerUpdateEffect.effect.Resolve(
+                this,
+                afterPowerUpdateEffect.playerID,
+                afterPowerUpdateEffect.card);
         }
         UpdateAllFieldCardPowerAndKeywords();
 

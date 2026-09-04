@@ -15,5 +15,8 @@ MonoBehaviour:
   Trigger: 3
   MaxCount: 1
   MinCount: 1
+  DefeatAll: 0
   MaxPower: -1
   MinPower: -1
+  CanTargetAlliedCards: 1
+  OnlyIfFewerCreatures: 0
