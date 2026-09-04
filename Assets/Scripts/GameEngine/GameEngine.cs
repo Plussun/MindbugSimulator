@@ -734,6 +734,23 @@ public class GameEngine
         }
     }
 
+    public void ReturnDiscardPileToHand(int playerID)
+    {
+        PlayerState player = State.Players[playerID];
+
+        if(player.DiscardPile.Count == 0)
+        {
+            Debug.Log("玩家" + playerID + "的弃牌堆为空");
+            return;
+        }
+
+        int returnedCardCount = player.DiscardPile.Count;
+        player.Hand.AddRange(player.DiscardPile);
+        player.DiscardPile.Clear();
+        Debug.Log("玩家" + playerID + "将弃牌堆中的"
+            + returnedCardCount + "张牌拿回手中");
+    }
+
     //先统一判断所有卡牌的Tough，再把真正被击败的卡牌一起移入弃牌堆
     public List<(int playerID, CardInstance card)> DefeatCard(
         List<(int playerID, int cardInstanceID)> targets)
