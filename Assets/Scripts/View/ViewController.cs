@@ -221,31 +221,31 @@ public class ViewController : MonoBehaviour
             // 高亮显示当前待攻击决策的卡牌
             if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
             {
-                cardView.transform.Find("Highlight").gameObject.SetActive(true);
+                cardView.Highlight.SetActive(true);
             }
             else
             {
-                cardView.transform.Find("Highlight").gameObject.SetActive(false);
+                cardView.Highlight.SetActive(false);
             }
 
             // 高亮显示当前被选中的卡牌
             if(pendingTarget.CardInstanceID == cards[i].CardInstanceID)
             {
-                cardView.transform.Find("Aimed").gameObject.SetActive(true);
+                cardView.Aimed.SetActive(true);
             }
             else
             {
-                cardView.transform.Find("Aimed").gameObject.SetActive(false);
+                cardView.Aimed.SetActive(false);
             }
             // 高亮显示当前待选择的卡牌
             if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(cards[i].CardInstanceID))
             {
-                cardView.transform.Find("Candidate").gameObject.SetActive(true);
+                cardView.Candidate.SetActive(true);
                 cardView.SetClickAction(ChooseDecision);
             }
             else
             {
-                cardView.transform.Find("Candidate").gameObject.SetActive(false);
+                cardView.Candidate.SetActive(false);
             }
 
         }
@@ -354,12 +354,12 @@ public class ViewController : MonoBehaviour
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
             if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(DiscardPile[i].CardInstanceID))
             {
-                cardView.transform.Find("Candidate").gameObject.SetActive(true);
+                cardView.Candidate.SetActive(true);
                 cardView.SetClickAction(ChooseDecision);
             }
             else
             {
-                cardView.transform.Find("Candidate").gameObject.SetActive(false);
+                cardView.Candidate.SetActive(false);
             }
             
         }

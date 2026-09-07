@@ -9198,7 +9198,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxWidth: 800
-  CardWidth: 300
   Gap: 20
   NormalScale: 0.4
 --- !u!114 &2100000002
@@ -9214,7 +9213,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxWidth: 800
-  CardWidth: 300
   Gap: 20
   NormalScale: 0.4
 --- !u!114 &2100000003
@@ -9231,7 +9229,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxWidth: 600
   PreferredSpacing: 120
-  CardWidth: 300
   ArcHeight: 40
   MaxAngle: 8
   CardScale: 0.4
@@ -9250,7 +9247,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxWidth: 600
   PreferredSpacing: 120
-  CardWidth: 300
   ArcHeight: 40
   MaxAngle: 8
   CardScale: 0.4
@@ -9272,8 +9268,6 @@ MonoBehaviour:
   HorizontalSpacing: 20
   VerticalOffset: 30
   ScreenMargin: 20
-  PreviewWidth: 300
-  PreviewHeight: 400
 --- !u!1 &2121984780
 GameObject:
   m_ObjectHideFlags: 0

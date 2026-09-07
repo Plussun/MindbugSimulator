@@ -8,8 +8,6 @@ public class HandCardLayout : MonoBehaviour
     public float MaxWidth = 800f;
     // 空间足够时，相邻卡牌中心之间的距离。
     public float PreferredSpacing = 120f;
-    // 卡牌预制体未经缩放时的实际宽度。
-    public float CardWidth = 300f;
     // 扇形两端相对中心卡牌的垂直偏移量。
     public float ArcHeight = 40f;
     // 扇形最左侧和最右侧卡牌的最大旋转角度。
@@ -27,8 +25,9 @@ public class HandCardLayout : MonoBehaviour
             return;
         }
 
-        // 最大宽度中要为左右两端各留下半张牌的空间。
-        float cardDisplayWidth = CardWidth * CardScale;
+        // 直接读取卡牌根节点宽度，使预制体成为卡牌尺寸的唯一来源。
+        RectTransform firstCard = transform.GetChild(0) as RectTransform;
+        float cardDisplayWidth = firstCard.rect.width * CardScale;
         float availableWidth = Mathf.Max(0, MaxWidth - cardDisplayWidth);
 
         // 手牌放不下时只缩短间距，不缩小卡牌。

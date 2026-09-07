@@ -6,8 +6,6 @@ public class FieldCardLayout : MonoBehaviour
 {
     // 整组场地卡牌允许占据的最大宽度。
     public float MaxWidth = 800f;
-    // 卡牌预制体未经缩放时的实际宽度。
-    public float CardWidth = 300f;
     // 未缩放状态下，两张卡牌边缘之间预留的距离。
     public float Gap = 20f;
     // 空间足够时，场地卡牌使用的正常缩放比例。
@@ -21,11 +19,15 @@ public class FieldCardLayout : MonoBehaviour
             return;
         }
 
+        // 直接读取卡牌根节点宽度，使预制体成为卡牌尺寸的唯一来源。
+        RectTransform firstCard = transform.GetChild(0) as RectTransform;
+        float cardWidth = firstCard.rect.width;
+
         // 先计算原始尺寸下需要的总宽度，再求出能够放入MaxWidth的缩放比例。
         float requiredWidth =
-            cardCount * CardWidth + (cardCount - 1) * Gap;
+            cardCount * cardWidth + (cardCount - 1) * Gap;
         float scale = Mathf.Min(NormalScale, MaxWidth / requiredWidth);
-        float spacing = (CardWidth + Gap) * scale;
+        float spacing = (cardWidth + Gap) * scale;
 
         // 使用中心下标计算位置，使整组卡牌始终关于容器原点对称。
         float centerIndex = (cardCount - 1) / 2f;

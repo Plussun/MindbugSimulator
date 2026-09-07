@@ -11,6 +11,13 @@ public class CardView : MonoBehaviour,
     IPointerEnterHandler,
     IPointerExitHandler
 {
+    public RectTransform CardViewVisual;
+    public GameObject Selected;
+    public GameObject Aimed;
+    public GameObject Highlight;
+    public GameObject Candidate;
+    public RectTransform CardBackground;
+
     public TMP_Text CardNameText;
     public TMP_Text CardPowerText;
     public TMP_Text CardDescribeText;
@@ -29,7 +36,7 @@ public class CardView : MonoBehaviour,
 
     private bool liftOnHover;
     private bool isHovered;
-    private Vector2 positionBeforeHover;
+    private Vector2 visualPositionBeforeHover;
     private int siblingIndexBeforeHover;
 
     // 手牌悬浮时升起的距离。场地卡牌不会使用该参数。
@@ -97,11 +104,11 @@ public class CardView : MonoBehaviour,
         // 这里可以添加选中状态的视觉反馈，比如改变边框颜色
         if (isSelected)
         {
-            transform.Find("Selected").gameObject.SetActive(true); // 假设有一个名为"Selected"的子对象用于显示选中状态
+            Selected.SetActive(true);
         }
         else
         {
-            transform.Find("Selected").gameObject.SetActive(false); // 隐藏选中状态
+            Selected.SetActive(false);
         }
     }
     public void SetAimed(bool isAimed)
@@ -109,11 +116,11 @@ public class CardView : MonoBehaviour,
         // 这里可以添加瞄准状态的视觉反馈，比如改变边框颜色
         if (isAimed)
         {
-            transform.Find("Aimed").gameObject.SetActive(true); // 假设有一个名为"Aimed"的子对象用于显示瞄准状态
+            Aimed.SetActive(true);
         }
         else
         {
-            transform.Find("Aimed").gameObject.SetActive(false); // 隐藏瞄准状态
+            Aimed.SetActive(false);
         }
     }
     public void OnPointerClick(PointerEventData eventData)
@@ -137,12 +144,13 @@ public class CardView : MonoBehaviour,
 
         if(liftOnHover)
         {
-            RectTransform cardRect = transform as RectTransform;
-            positionBeforeHover = cardRect.anchoredPosition;
+            // 根节点的位置属于手牌布局，悬浮只移动内部的视觉节点。
+            visualPositionBeforeHover = CardViewVisual.anchoredPosition;
             siblingIndexBeforeHover = transform.GetSiblingIndex();
 
             // 升起后放到最后绘制，避免被相邻的重叠手牌遮挡。
-            cardRect.anchoredPosition += Vector2.up * HandHoverHeight;
+            CardViewVisual.anchoredPosition =
+                visualPositionBeforeHover + Vector2.up * HandHoverHeight;
             transform.SetAsLastSibling();
         }
 
@@ -160,8 +168,7 @@ public class CardView : MonoBehaviour,
 
         if(liftOnHover)
         {
-            RectTransform cardRect = transform as RectTransform;
-            cardRect.anchoredPosition = positionBeforeHover;
+            CardViewVisual.anchoredPosition = visualPositionBeforeHover;
 
             // 恢复原来的层级位置，防止悬浮操作改变手牌顺序。
             transform.SetSiblingIndex(siblingIndexBeforeHover);

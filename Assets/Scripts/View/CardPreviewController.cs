@@ -14,10 +14,6 @@ public class CardPreviewController : MonoBehaviour
     public float VerticalOffset = 30f;
     // 预览卡与屏幕四边之间保留的最小距离。
     public float ScreenMargin = 20f;
-    // CardViewPrefab中卡牌背景的原始尺寸。
-    public float PreviewWidth = 300f;
-    public float PreviewHeight = 400f;
-
     private Canvas canvas;
     private RectTransform canvasRect;
     private RectTransform previewRoot;
@@ -45,10 +41,11 @@ public class CardPreviewController : MonoBehaviour
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
 
-        SetDecorationActive("Highlight", false);
-        SetDecorationActive("Selected", false);
-        SetDecorationActive("Aimed", false);
-        SetDecorationActive("Candidate", false);
+        // 预览卡只显示卡牌信息，不显示任何游戏状态标记。
+        previewCard.Highlight.SetActive(false);
+        previewCard.Selected.SetActive(false);
+        previewCard.Aimed.SetActive(false);
+        previewCard.Candidate.SetActive(false);
 
         previewObject.SetActive(false);
     }
@@ -102,13 +99,8 @@ public class CardPreviewController : MonoBehaviour
             ? null
             : canvas.worldCamera;
 
-        // CardView根节点目前小于实际卡面，因此使用CardBackground的四角计算真实范围。
-        RectTransform sourceRect =
-            sourceCard.transform.Find("CardBackground") as RectTransform;
-        if(sourceRect == null)
-        {
-            sourceRect = sourceCard.transform as RectTransform;
-        }
+        // 使用实际卡面的四角计算范围，横置或缩放后的卡牌也能正确定位预览。
+        RectTransform sourceRect = sourceCard.CardBackground;
 
         sourceRect.GetWorldCorners(sourceWorldCorners);
 
@@ -138,8 +130,11 @@ public class CardPreviewController : MonoBehaviour
 
         float sourceCenterX = (minX + maxX) / 2f;
         float sourceCenterY = (minY + maxY) / 2f;
-        float previewHalfWidth = PreviewWidth * PreviewScale / 2f;
-        float previewHalfHeight = PreviewHeight * PreviewScale / 2f;
+        // 直接读取预制体中的卡面尺寸，避免在脚本中重复维护固定数值。
+        float previewHalfWidth =
+            previewCard.CardBackground.rect.width * PreviewScale / 2f;
+        float previewHalfHeight =
+            previewCard.CardBackground.rect.height * PreviewScale / 2f;
 
         // 原卡在左半边时预览放右侧，原卡在右半边时预览放左侧。
         float previewX = sourceCenterX < canvasRect.rect.center.x
@@ -160,14 +155,5 @@ public class CardPreviewController : MonoBehaviour
         // CardPreviewRoot不直接挂在Canvas下，所以先从Canvas局部坐标转换到世界坐标。
         previewRoot.position = canvasRect.TransformPoint(
             new Vector3(previewX, previewY, 0));
-    }
-
-    private void SetDecorationActive(string decorationName, bool isActive)
-    {
-        Transform decoration = previewCard.transform.Find(decorationName);
-        if(decoration != null)
-        {
-            decoration.gameObject.SetActive(isActive);
-        }
     }
 }
