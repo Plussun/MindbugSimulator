@@ -6,7 +6,10 @@ using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
 
-public class CardView : MonoBehaviour, IPointerClickHandler
+public class CardView : MonoBehaviour,
+    IPointerClickHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     public TMP_Text CardNameText;
     public TMP_Text CardPowerText;
@@ -15,11 +18,37 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     public int CardInstanceID;
     public Keywords CurrentKeywords; // 添加一个字段来存储当前的关键词
 
+    // 保存当前卡牌的显示数据，预览卡可以直接复制，而不需要反向读取文本组件。
+    public string CurrentCardName { get; private set; }
+    public string CurrentCardDescription { get; private set; }
+    public int CurrentPower { get; private set; }
+
     private Action<CardView> clickAction;
+    private Action<CardView> pointerEnterAction;
+    private Action<CardView> pointerExitAction;
+
+    private bool liftOnHover;
+    private bool isHovered;
+    private Vector2 positionBeforeHover;
+    private int siblingIndexBeforeHover;
+
+    // 手牌悬浮时升起的距离。场地卡牌不会使用该参数。
+    public float HandHoverHeight = 30f;
 
     public void SetClickAction(Action<CardView> action)
     {
         clickAction = action;
+    }
+
+    // 设置悬浮时的显示回调，并决定该卡是否需要在悬浮时升起。
+    public void SetPointerActions(
+        Action<CardView> enterAction,
+        Action<CardView> exitAction,
+        bool shouldLiftOnHover)
+    {
+        pointerEnterAction = enterAction;
+        pointerExitAction = exitAction;
+        liftOnHover = shouldLiftOnHover;
     }
 
     public void UpdateCardView(string cardName,
@@ -29,6 +58,10 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         int currentKeywords,
         bool isExhausted)
     {
+        CurrentCardName = cardName;
+        CurrentCardDescription = cardDescribe;
+        CurrentPower = currentPower;
+
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
         CurrentKeywords = (Keywords)currentKeywords;
@@ -91,5 +124,49 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         }
         Debug.Log("Card clicked: " + CardInstanceID);
         clickAction?.Invoke(this);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if(isHovered)
+        {
+            return;
+        }
+
+        isHovered = true;
+
+        if(liftOnHover)
+        {
+            RectTransform cardRect = transform as RectTransform;
+            positionBeforeHover = cardRect.anchoredPosition;
+            siblingIndexBeforeHover = transform.GetSiblingIndex();
+
+            // 升起后放到最后绘制，避免被相邻的重叠手牌遮挡。
+            cardRect.anchoredPosition += Vector2.up * HandHoverHeight;
+            transform.SetAsLastSibling();
+        }
+
+        pointerEnterAction?.Invoke(this);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if(!isHovered)
+        {
+            return;
+        }
+
+        isHovered = false;
+
+        if(liftOnHover)
+        {
+            RectTransform cardRect = transform as RectTransform;
+            cardRect.anchoredPosition = positionBeforeHover;
+
+            // 恢复原来的层级位置，防止悬浮操作改变手牌顺序。
+            transform.SetSiblingIndex(siblingIndexBeforeHover);
+        }
+
+        pointerExitAction?.Invoke(this);
     }
 }

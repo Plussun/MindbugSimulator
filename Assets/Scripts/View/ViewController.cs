@@ -11,6 +11,7 @@ public class ViewController : MonoBehaviour
     public Transform PendingCardsContainer;
     public Transform WinnerContainer;
     public Transform DiscardPilePannel;
+    public CardPreviewController CardPreviewController;
 
     public Button NoBlockButton;
     public Button NoMindbugButton;
@@ -78,6 +79,9 @@ public class ViewController : MonoBehaviour
         int[] candidateCardInstanceIDs
         )
     {
+        // 刷新会销毁并重新生成卡牌，因此先关闭仍引用旧CardView的预览。
+        CardPreviewController.Hide();
+
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
 
@@ -172,6 +176,17 @@ public class ViewController : MonoBehaviour
 
             bool isLocalHand = (playerTransform == LocalPlayer && handOrField == "Hand");
             bool isLocalField = (playerTransform == LocalPlayer && handOrField == "Field");
+
+            // 本方手牌和双方场上的明牌可以查看预览；只有本方手牌会在悬浮时升起。
+            bool canShowPreview = isLocalHand || handOrField == "Field";
+            if(canShowPreview)
+            {
+                cardView.SetPointerActions(
+                    CardPreviewController.Show,
+                    CardPreviewController.Hide,
+                    isLocalHand);
+            }
+
             //如果是本方手牌，且当前是本方主动回合，则绑定出牌事件
             if(isLocalHand &&
                 currentPhase == GamePhase.WaitingForMainAction &&
