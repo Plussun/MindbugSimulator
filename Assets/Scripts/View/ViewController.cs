@@ -20,6 +20,7 @@ public class ViewController : MonoBehaviour
     public Button NoFrenzyAttackButton;
     public Button NextGameButton;
     public Button ChooseButton;
+    public Button PlayButton;
 
     public GameController gameController;
     public NetworkController networkController;
@@ -39,6 +40,7 @@ public class ViewController : MonoBehaviour
         BlockButton.onClick.AddListener(OnBlockButtonClicked);
         NoFrenzyAttackButton.onClick.AddListener(OnNoFrenzyAttackButtonClicked);
         ChooseButton.onClick.AddListener(OnChooseButtonClicked);
+        PlayButton.onClick.AddListener(OnPlayButtonClicked);
 
         DiscardPilePannel.Find("CloseButton").GetComponent<Button>().
             onClick.AddListener(() => OnDiscardPileClicked(true));
@@ -81,6 +83,7 @@ public class ViewController : MonoBehaviour
 
         selectedCard = null;
         choosedCards.Clear();
+        PlayButton.gameObject.SetActive(false);
         AttackButton.gameObject.SetActive(false);
         if(hasPendingChoice)
         {
@@ -145,9 +148,12 @@ public class ViewController : MonoBehaviour
         PendingChoice pendingChoice)
     {
         Transform handContainer = playerTransform.Find(handOrField);
-        // 清空现有手牌视图
-        foreach (Transform child in handContainer)
+        // Destroy会到当前帧结束时才真正删除对象。
+        // 先把旧卡牌移出容器，避免本帧计算布局时把旧卡牌也统计进去。
+        for(int i = handContainer.childCount - 1; i >= 0; i--)
         {
+            Transform child = handContainer.GetChild(i);
+            child.SetParent(null);
             Destroy(child.gameObject);
         }
         // 创建新的手牌视图
@@ -197,11 +203,6 @@ public class ViewController : MonoBehaviour
                     cardView.SetClickAction(AttackDecision);
                 }
             }
-
-
-            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
-            cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
-            
             // 高亮显示当前待攻击决策的卡牌
             if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
             {
@@ -233,15 +234,26 @@ public class ViewController : MonoBehaviour
             }
 
         }
+
+        if(handOrField == "Hand")
+        {
+            handContainer.GetComponent<HandCardLayout>().RefreshLayout();
+        }
+        else
+        {
+            handContainer.GetComponent<FieldCardLayout>().RefreshLayout();
+        }
     }
 
     // 刷新对手手牌视图，显示为背面,并且数量与对手手牌数量一致
     public void RefreshOpponentHandView(int opponentHandCount, Transform opponentTransform)
     {
         Transform handContainer = opponentTransform.Find("Hand");
-        // 清空现有手牌视图
-        foreach (Transform child in handContainer)
+        // 先移出容器再销毁，使随后生成的新手牌可以立刻按正确数量居中。
+        for(int i = handContainer.childCount - 1; i >= 0; i--)
         {
+            Transform child = handContainer.GetChild(i);
+            child.SetParent(null);
             Destroy(child.gameObject);
         }
         // 创建新的手牌视图
@@ -252,9 +264,9 @@ public class ViewController : MonoBehaviour
             // 设置卡牌为背面显示
             cardView.UpdateCardView("Back", "", 0, -2, 0, false); // 使用-2表示未知的CardInstanceID，为了和未知目标的-1ID区分开
             //TODO:制作真正的卡背显示方法
-            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
-            cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
         }
+
+        handContainer.GetComponent<HandCardLayout>().RefreshLayout();
     }
 
     public void RefreshPendingCardsView(CardNetworkState pendingCard)
@@ -415,7 +427,30 @@ public class ViewController : MonoBehaviour
     }
     public void PlayCardDecision(CardView cardView)
     {
-        networkController.PlayCardRequest(cardView.CardInstanceID);
+        if(selectedCard == null)
+        {
+            selectedCard = cardView;
+            selectedCard.SetSelected(true);
+            PlayButton.gameObject.SetActive(true);
+        }
+        else
+        {
+            selectedCard.SetSelected(false);
+            selectedCard = null;
+            PlayButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void OnPlayButtonClicked()
+    {
+        if(selectedCard != null)
+        {
+            selectedCard.SetSelected(false);
+            //发送请求前先取消选中，避免同步刷新后继续访问已销毁的卡牌对象。
+            networkController.PlayCardRequest(selectedCard.CardInstanceID);
+            selectedCard = null;
+            PlayButton.gameObject.SetActive(false);
+        }
     }
 
     public void AttackDecision(CardView cardView)
