@@ -115,6 +115,7 @@ RectTransform:
   - {fileID: 5958894316985941444}
   - {fileID: 3649066560678312955}
   - {fileID: 3138534733061036617}
+  - {fileID: 1239157982247460459}
   m_Father: {fileID: 510851266141679202}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -623,6 +624,41 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4444133557460589315
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1239157982247460459}
+  m_Layer: 5
+  m_Name: KeywordsIconContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1239157982247460459
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4444133557460589315}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1855507981984768775}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 148.4, y: 119}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &4795653294447812807
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,6 +870,9 @@ MonoBehaviour:
   CardPowerText: {fileID: 8578381379493765192}
   CardDescribeText: {fileID: 3403697040377638930}
   CardKeywordsText: {fileID: 3767330550256269629}
+  KeywordsIconPrefab: {fileID: 2155795100380453640, guid: 00d1d3951e8e4d52d89abf23c043669f, type: 3}
+  KeywordsIconContainer: {fileID: 1239157982247460459}
+  KeywordIconSpacing: 55
   CardInstanceID: 0
   CurrentKeywords: 0
   HandHoverHeight: 30

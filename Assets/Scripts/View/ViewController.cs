@@ -23,11 +23,14 @@ public class ViewController : MonoBehaviour
     public Button ChooseButton;
     public Button PlayButton;
 
+    public TMP_Text InformationText;
+
     public GameController gameController;
     public NetworkController networkController;
 
     private GamePhase currentPhase;
     private bool isLocalPlayerExpected;
+    private bool hasRequiredBlockTarget;
     private CardView selectedCard;
     private List<CardView> choosedCards = new List<CardView>();
 
@@ -90,6 +93,7 @@ public class ViewController : MonoBehaviour
     {
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
+        hasRequiredBlockTarget = pendingTarget.CardInstanceID != -1;
 
         selectedCard = null;
         choosedCards.Clear();
@@ -109,6 +113,13 @@ public class ViewController : MonoBehaviour
         {
             pendingChoice = null;
         }
+
+        RefreshInformationText(
+            winnerPlayerID,
+            localPlayerID,
+            localPlayerMindbugCount,
+            minSelectCount,
+            maxSelectCount);
         
         RefreshPlayerPortrait(true, localPlayerLife, 
             localPlayerMindbugCount, isLocalPlayerExpected);
@@ -144,6 +155,8 @@ public class ViewController : MonoBehaviour
         LocalPlayer.Find("Hand").GetComponent<HandCardLayout>().RefreshLayout();
         LocalPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
         OpponentPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
+        DiscardPilePannel.Find("local").GetComponent<DiscardPileLayout>().RefreshLayout();
+        DiscardPilePannel.Find("opponent").GetComponent<DiscardPileLayout>().RefreshLayout();
         CardPreviewController.RefreshCurrentPreview();
 
         RefreshButtons(localPlayerMindbugCount,pendingTarget);
@@ -348,9 +361,11 @@ public class ViewController : MonoBehaviour
         {
             CardNetworkState cardState = DiscardPile[i];
             CardView cardView = GetOrCreateCardView(cardState, startPoint);
-            cardView.SetPointerActions(null, null, false);
-            cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
-            cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
+            // 弃牌区是公开信息，可以查看预览，但不需要像手牌一样升起。
+            cardView.SetPointerActions(
+                CardPreviewController.Show,
+                CardPreviewController.Hide,
+                false);
 
             bool isCandidate = pendingChoice != null &&
                 pendingChoice.CandidateCardInstanceIDs.Contains(
@@ -483,6 +498,113 @@ public class ViewController : MonoBehaviour
         }
     }
 
+    // 根据客户端收到的状态更新操作提示，只影响本地UI，不修改任何游戏状态。
+    private void RefreshInformationText(
+        int winnerPlayerID,
+        int localPlayerID,
+        int localPlayerMindbugCount,
+        int minSelectCount,
+        int maxSelectCount)
+    {
+        if(InformationText == null)
+        {
+            return;
+        }
+
+        switch(currentPhase)
+        {
+            case GamePhase.Setup:
+                InformationText.text = "等待游戏开始";
+                break;
+
+            case GamePhase.WaitingForMainAction:
+                InformationText.text = isLocalPlayerExpected
+                    ? "你的回合：请选择出牌或发起攻击"
+                    : "等待对手出牌或发起攻击";
+                break;
+
+            case GamePhase.WaitingForMindbugDecision:
+                if(!isLocalPlayerExpected)
+                {
+                    InformationText.text = "等待对手决定是否使用夺心虫";
+                }
+                else if(localPlayerMindbugCount > 0)
+                {
+                    InformationText.text = "请选择是否使用夺心虫";
+                }
+                else
+                {
+                    InformationText.text = "你没有可用的夺心虫，请选择不使用";
+                }
+                break;
+
+            case GamePhase.WaitingForBlockDecision:
+                if(!isLocalPlayerExpected)
+                {
+                    InformationText.text = "等待对手决定是否阻挡";
+                }
+                else if(hasRequiredBlockTarget)
+                {
+                    InformationText.text = "猎杀：请选择指定生物进行阻挡";
+                }
+                else
+                {
+                    InformationText.text = "请选择生物进行阻挡，或选择不阻挡";
+                }
+                break;
+
+            case GamePhase.WaitingForFrenzyAttack:
+                InformationText.text = isLocalPlayerExpected
+                    ? "狂暴：请选择再次攻击，或放弃再次攻击"
+                    : "等待对手决定是否再次攻击";
+                break;
+
+            case GamePhase.WaitingForChoice:
+                InformationText.text = isLocalPlayerExpected
+                    ? GetChoiceInformation(minSelectCount, maxSelectCount)
+                    : "等待对手选择卡牌";
+                break;
+
+            default:
+                InformationText.text = "等待游戏状态更新";
+                break;
+        }
+    }
+
+    private string GetChoiceInformation(int minSelectCount, int maxSelectCount)
+    {
+        if(minSelectCount == maxSelectCount)
+        {
+            return "请选择" + minSelectCount + "张卡牌";
+        }
+        if(minSelectCount == 0)
+        {
+            return "请选择至多" + maxSelectCount + "张卡牌";
+        }
+
+        return "请选择" + minSelectCount + "至" + maxSelectCount + "张卡牌";
+    }
+
+    // 选择过程中直接更新本地提示，不需要等待服务器再次同步状态。
+    private void RefreshChoiceSelectionInformation()
+    {
+        if(InformationText == null || pendingChoice == null)
+        {
+            return;
+        }
+
+        if(choosedCards.Count < pendingChoice.MinSelectCount)
+        {
+            InformationText.text = "已选择" + choosedCards.Count
+                + "张，还需至少选择" + pendingChoice.MinSelectCount + "张";
+        }
+        else
+        {
+            InformationText.text = "已选择" + choosedCards.Count
+                + "张，请点击确认选择";
+        }
+    }
+
     public void RefreshWinnerView(int winnerPlayerID,int localPlayerID)
     {
 
@@ -511,12 +633,15 @@ public class ViewController : MonoBehaviour
             selectedCard = cardView;
             selectedCard.SetSelected(true);
             PlayButton.gameObject.SetActive(true);
+            InformationText.text = "已选择「" + cardView.CurrentCardName
+                + "」，请点击出牌确认";
         }
         else
         {
             selectedCard.SetSelected(false);
             selectedCard = null;
             PlayButton.gameObject.SetActive(false);
+            InformationText.text = "你的回合：请选择出牌或发起攻击";
         }
     }
 
@@ -539,12 +664,15 @@ public class ViewController : MonoBehaviour
             selectedCard = cardView;
             selectedCard.SetSelected(true);
             AttackButton.gameObject.SetActive(true);
+            InformationText.text = "已选择「" + cardView.CurrentCardName
+                + "」，请点击攻击确认";
         }
         else
         {
             selectedCard.SetSelected(false);
             selectedCard = null;
             AttackButton.gameObject.SetActive(false);
+            InformationText.text = "你的回合：请选择出牌或发起攻击";
         }
     }
 
@@ -565,6 +693,7 @@ public class ViewController : MonoBehaviour
             ChooseButton.gameObject.SetActive(true);
             choosedCards.Remove(cardView);
             cardView.SetAimed(false);
+            RefreshChoiceSelectionInformation();
             return;
         }
         if(choosedCards.Count >= pendingChoice.MaxSelectCount)
@@ -577,6 +706,7 @@ public class ViewController : MonoBehaviour
             ChooseButton.gameObject.SetActive(true);
             choosedCards.Add(cardView);
             cardView.SetAimed(true);
+            RefreshChoiceSelectionInformation();
         }
     }
 
@@ -613,12 +743,17 @@ public class ViewController : MonoBehaviour
             selectedCard = cardView;
             selectedCard.SetSelected(true);
             BlockButton.gameObject.SetActive(true);
+            InformationText.text = "已选择「" + cardView.CurrentCardName
+                + "」，请点击阻挡确认";
         }
         else
         {
             selectedCard.SetSelected(false);
             selectedCard = null;
             BlockButton.gameObject.SetActive(false);
+            InformationText.text = hasRequiredBlockTarget
+                ? "猎杀：请选择指定生物进行阻挡"
+                : "请选择生物进行阻挡，或选择不阻挡";
         }
     }
 

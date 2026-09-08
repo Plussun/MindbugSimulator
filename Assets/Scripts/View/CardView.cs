@@ -23,6 +23,10 @@ public class CardView : MonoBehaviour,
     public TMP_Text CardPowerText;
     public TMP_Text CardDescribeText;
     public TMP_Text CardKeywordsText;
+    public GameObject KeywordsIconPrefab;
+    public RectTransform KeywordsIconContainer;
+    // 相邻关键词图标中心之间的垂直距离。
+    public float KeywordIconSpacing = 55f;
     public int CardInstanceID;
     public Keywords CurrentKeywords; // 添加一个字段来存储当前的关键词
 
@@ -90,7 +94,12 @@ public class CardView : MonoBehaviour,
 
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
-        CurrentKeywords = (Keywords)currentKeywords;
+        Keywords newKeywords = (Keywords)currentKeywords;
+        if(CurrentKeywords != newKeywords)
+        {
+            CurrentKeywords = newKeywords;
+            RefreshKeywordIcons();
+        }
         CardDescribeText.text = cardDescribe;
         CardKeywordsText.text = "";
         if(CurrentKeywords.HasFlag(Keywords.Sneaky))
@@ -117,6 +126,42 @@ public class CardView : MonoBehaviour,
         CardInstanceID = cardInstanceID;
         // 根据isExhausted更新卡牌的横置状态
         transform.rotation = isExhausted ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;
+    }
+
+    // 按固定顺序生成当前卡牌拥有的关键词图标，并从容器位置开始向下排列。
+    private void RefreshKeywordIcons()
+    {
+        foreach(Transform child in KeywordsIconContainer)
+        {
+            // Destroy会在帧末执行，因此先隐藏旧图标，避免同一帧与新图标重叠。
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+
+        int iconIndex = 0;
+        AddKeywordIcon(Keywords.Sneaky, ref iconIndex);
+        AddKeywordIcon(Keywords.Frenzy, ref iconIndex);
+        AddKeywordIcon(Keywords.Hunter, ref iconIndex);
+        AddKeywordIcon(Keywords.Poisonous, ref iconIndex);
+        AddKeywordIcon(Keywords.Tough, ref iconIndex);
+    }
+
+    private void AddKeywordIcon(Keywords keyword, ref int iconIndex)
+    {
+        if(!CurrentKeywords.HasFlag(keyword))
+        {
+            return;
+        }
+
+        GameObject iconObject = Instantiate(
+            KeywordsIconPrefab,
+            KeywordsIconContainer);
+        KeywordsIcon keywordIcon = iconObject.GetComponent<KeywordsIcon>();
+        keywordIcon.SetIconImage(keyword);
+
+        RectTransform iconRect = iconObject.transform as RectTransform;
+        iconRect.anchoredPosition = Vector2.down * KeywordIconSpacing * iconIndex;
+        iconIndex++;
     }
 
     // 在完整卡面和卡背之间切换。卡背不包含任何可供客户端读取的卡牌信息。
