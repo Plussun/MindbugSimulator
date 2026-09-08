@@ -31,6 +31,10 @@ public class ViewController : MonoBehaviour
     private CardView selectedCard;
     private List<CardView> choosedCards = new List<CardView>();
 
+    // 本方手牌使用实例ID保存对应的显示对象，使状态刷新时可以复用已有CardView。
+    private Dictionary<int, CardView> localHandCardViews =
+        new Dictionary<int, CardView>();
+
     private PendingChoice pendingChoice;
 
     // Start is called before the first frame update
@@ -108,7 +112,11 @@ public class ViewController : MonoBehaviour
             localPlayerMindbugCount, isLocalPlayerExpected);
         RefreshPlayerPortrait(false, opponentPlayerLife, opponentPlayerMindbugCount,
             !isLocalPlayerExpected);
-        RefreshHandOrFieldView(localPlayerHand, LocalPlayer, "Hand", pendingAttack, pendingTarget,pendingChoice);
+        RefreshLocalHandView(
+            localPlayerHand,
+            pendingAttack,
+            pendingTarget,
+            pendingChoice);
         RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
         RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
@@ -142,6 +150,110 @@ public class ViewController : MonoBehaviour
             }
         }
         
+    }
+
+    // 增量刷新本方手牌：保留仍在手牌中的CardView，只创建或删除发生变化的卡牌。
+    public void RefreshLocalHandView(
+        CardNetworkState[] cards,
+        CardNetworkState pendingAttack,
+        CardNetworkState pendingTarget,
+        PendingChoice pendingChoice)
+    {
+        Transform handContainer = LocalPlayer.Find("Hand");
+        HashSet<int> currentCardIDs = new HashSet<int>();
+        List<int> removedCardIDs = new List<int>();
+
+        // 先记录服务器状态中当前仍然存在的手牌ID。
+        foreach(CardNetworkState card in cards)
+        {
+            currentCardIDs.Add(card.CardInstanceID);
+        }
+
+        // 遍历字典期间不能直接删除内容，因此先单独记录已经离开手牌的ID。
+        foreach(int cardInstanceID in localHandCardViews.Keys)
+        {
+            if(!currentCardIDs.Contains(cardInstanceID))
+            {
+                removedCardIDs.Add(cardInstanceID);
+            }
+        }
+
+        foreach(int cardInstanceID in removedCardIDs)
+        {
+            CardView cardView = localHandCardViews[cardInstanceID];
+            CardPreviewController.Hide(cardView);
+
+            // 立即停用并移出Hand，使本帧随后的布局不会统计到待销毁卡牌。
+            // 以后加入出牌、弃牌动画时，可在这里改为交给动画系统接管。
+            cardView.gameObject.SetActive(false);
+            cardView.transform.SetParent(transform, false);
+            Destroy(cardView.gameObject);
+            localHandCardViews.Remove(cardInstanceID);
+        }
+
+        for(int i = 0; i < cards.Length; i++)
+        {
+            CardNetworkState cardState = cards[i];
+
+            if(!localHandCardViews.TryGetValue(
+                cardState.CardInstanceID,
+                out CardView cardView))
+            {
+                GameObject cardViewObject =
+                    Instantiate(CardViewPrefab, handContainer);
+                cardView = cardViewObject.GetComponent<CardView>();
+
+                localHandCardViews.Add(
+                    cardState.CardInstanceID,
+                    cardView);
+
+                // 本方手牌始终允许查看预览，并在悬浮时升起。
+                cardView.SetPointerActions(
+                    CardPreviewController.Show,
+                    CardPreviewController.Hide,
+                    true);
+            }
+
+            CardData cardData = GetCardDataByID(cardState.CardDataID);
+            cardView.UpdateCardView(
+                cardData.CardName,
+                cardData.Description,
+                cardState.currentPower,
+                cardState.CardInstanceID,
+                cardState.keywords,
+                cardState.isExhausted);
+
+            // CardView会被跨阶段复用，必须先清除上一次刷新留下的交互和选中状态。
+            cardView.SetClickAction(null);
+            cardView.SetSelected(false);
+
+            if(currentPhase == GamePhase.WaitingForMainAction &&
+                isLocalPlayerExpected)
+            {
+                cardView.SetClickAction(PlayCardDecision);
+            }
+
+            cardView.Highlight.SetActive(
+                pendingAttack.CardInstanceID == cardState.CardInstanceID);
+            cardView.Aimed.SetActive(
+                pendingTarget.CardInstanceID == cardState.CardInstanceID);
+
+            bool isCandidate = pendingChoice != null &&
+                pendingChoice.CandidateCardInstanceIDs.Contains(
+                    cardState.CardInstanceID);
+            cardView.Candidate.SetActive(isCandidate);
+
+            // 待选择操作的优先级高于普通出牌操作。
+            if(isCandidate)
+            {
+                cardView.SetClickAction(ChooseDecision);
+            }
+
+            // 服务器数组顺序同时决定手牌布局顺序和UI遮挡顺序。
+            cardView.transform.SetSiblingIndex(i);
+        }
+
+        handContainer.GetComponent<HandCardLayout>().RefreshLayout();
     }
 
     public void RefreshHandOrFieldView(CardNetworkState[] cards,
@@ -276,9 +388,8 @@ public class ViewController : MonoBehaviour
         {
             GameObject cardViewObj = Instantiate(CardViewPrefab, handContainer);
             CardView cardView = cardViewObj.GetComponent<CardView>();
-            // 设置卡牌为背面显示
-            cardView.UpdateCardView("Back", "", 0, -2, 0, false); // 使用-2表示未知的CardInstanceID，为了和未知目标的-1ID区分开
-            //TODO:制作真正的卡背显示方法
+            // 对手手牌只显示卡背，不向该客户端填入任何真实卡牌数据。
+            cardView.SetCardBack(true);
         }
 
         handContainer.GetComponent<HandCardLayout>().RefreshLayout();

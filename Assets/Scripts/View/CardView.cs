@@ -12,6 +12,7 @@ public class CardView : MonoBehaviour,
     IPointerExitHandler
 {
     public RectTransform CardViewVisual;
+    public GameObject CardBack;
     public GameObject Selected;
     public GameObject Aimed;
     public GameObject Highlight;
@@ -65,6 +66,9 @@ public class CardView : MonoBehaviour,
         int currentKeywords,
         bool isExhausted)
     {
+        // 只要写入了完整卡牌数据，就按正面卡牌显示。
+        SetCardBack(false);
+
         CurrentCardName = cardName;
         CurrentCardDescription = cardDescribe;
         CurrentPower = currentPower;
@@ -99,6 +103,20 @@ public class CardView : MonoBehaviour,
         // 根据isExhausted更新卡牌的横置状态
         transform.rotation = isExhausted ? Quaternion.Euler(0, 0, 90) : Quaternion.identity;
     }
+
+    // 在完整卡面和卡背之间切换。卡背不包含任何可供客户端读取的卡牌信息。
+    public void SetCardBack(bool showCardBack)
+    {
+        CardViewVisual.gameObject.SetActive(!showCardBack);
+        CardBack.SetActive(showCardBack);
+
+        if(showCardBack)
+        {
+            // 使用-2表示未知卡牌，与“没有目标”的-1区分。
+            CardInstanceID = -2;
+        }
+    }
+
     public void SetSelected(bool isSelected)
     {
         // 这里可以添加选中状态的视觉反馈，比如改变边框颜色
