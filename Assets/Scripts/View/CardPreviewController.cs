@@ -93,6 +93,15 @@ public class CardPreviewController : MonoBehaviour
         }
     }
 
+    // 状态和布局刷新完成后，同步当前预览的数值与位置。
+    public void RefreshCurrentPreview()
+    {
+        if(currentSourceCard != null)
+        {
+            Show(currentSourceCard);
+        }
+    }
+
     private void PositionPreview(CardView sourceCard)
     {
         Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay

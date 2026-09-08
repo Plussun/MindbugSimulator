@@ -31,9 +31,14 @@ public class ViewController : MonoBehaviour
     private CardView selectedCard;
     private List<CardView> choosedCards = new List<CardView>();
 
-    // 本方手牌使用实例ID保存对应的显示对象，使状态刷新时可以复用已有CardView。
-    private Dictionary<int, CardView> localHandCardViews =
+    // 所有能够看到真实实例ID的卡牌共用同一个字典。
+    // 卡牌在手牌、场地、待决策区和弃牌区之间移动时，可以直接复用同一个CardView。
+    private Dictionary<int, CardView> cardViews =
         new Dictionary<int, CardView>();
+
+    // 每次刷新时记录新状态中仍然可见的卡牌，最后再统一删除真正消失的对象。
+    private HashSet<int> visibleCardInstanceIDs = new HashSet<int>();
+    private List<int> removedCardInstanceIDs = new List<int>();
 
     private PendingChoice pendingChoice;
 
@@ -83,9 +88,6 @@ public class ViewController : MonoBehaviour
         int[] candidateCardInstanceIDs
         )
     {
-        // 刷新会销毁并重新生成卡牌，因此先关闭仍引用旧CardView的预览。
-        CardPreviewController.Hide();
-
         currentPhase = (GamePhase)gamePhase;
         isLocalPlayerExpected = (localPlayerID == ExpectedPlayerID);
 
@@ -112,13 +114,18 @@ public class ViewController : MonoBehaviour
             localPlayerMindbugCount, isLocalPlayerExpected);
         RefreshPlayerPortrait(false, opponentPlayerLife, opponentPlayerMindbugCount,
             !isLocalPlayerExpected);
+        // 所有带真实实例ID的区域必须先全部处理完，再统一删除未出现的CardView。
+        // 这样卡牌跨区域移动时只会改变父物体，不会被旧区域提前销毁。
+        visibleCardInstanceIDs.Clear();
+        removedCardInstanceIDs.Clear();
+
         RefreshLocalHandView(
             localPlayerHand,
             pendingAttack,
             pendingTarget,
             pendingChoice);
-        RefreshHandOrFieldView(localPlayerField, LocalPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
-        RefreshHandOrFieldView(opponentPlayerField, OpponentPlayer, "Field", pendingAttack, pendingTarget,pendingChoice);
+        RefreshFieldView(localPlayerField, LocalPlayer, pendingAttack, pendingTarget,pendingChoice);
+        RefreshFieldView(opponentPlayerField, OpponentPlayer, pendingAttack, pendingTarget,pendingChoice);
         RefreshOpponentHandView(opponentHandCount, OpponentPlayer);
         RefreshPendingCardsView(pendingCard);
 
@@ -130,6 +137,14 @@ public class ViewController : MonoBehaviour
 
         RefreshDiscardCount(false, opponentPlayerDiscard.Length);
         RefreshDiscardPilePannel(false, opponentPlayerDiscard,pendingChoice);
+
+        RemoveInvisibleCardViews();
+
+        // 清理完成后再布局，避免已经离开某区域的旧对象参与本次排版。
+        LocalPlayer.Find("Hand").GetComponent<HandCardLayout>().RefreshLayout();
+        LocalPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
+        OpponentPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
+        CardPreviewController.RefreshCurrentPreview();
 
         RefreshButtons(localPlayerMindbugCount,pendingTarget);
         RefreshWinnerView(winnerPlayerID, localPlayerID);
@@ -152,7 +167,7 @@ public class ViewController : MonoBehaviour
         
     }
 
-    // 增量刷新本方手牌：保留仍在手牌中的CardView，只创建或删除发生变化的卡牌。
+    // 增量刷新本方手牌。删除工作由所有区域处理完成后的统一清理负责。
     public void RefreshLocalHandView(
         CardNetworkState[] cards,
         CardNetworkState pendingAttack,
@@ -160,72 +175,17 @@ public class ViewController : MonoBehaviour
         PendingChoice pendingChoice)
     {
         Transform handContainer = LocalPlayer.Find("Hand");
-        HashSet<int> currentCardIDs = new HashSet<int>();
-        List<int> removedCardIDs = new List<int>();
-
-        // 先记录服务器状态中当前仍然存在的手牌ID。
-        foreach(CardNetworkState card in cards)
-        {
-            currentCardIDs.Add(card.CardInstanceID);
-        }
-
-        // 遍历字典期间不能直接删除内容，因此先单独记录已经离开手牌的ID。
-        foreach(int cardInstanceID in localHandCardViews.Keys)
-        {
-            if(!currentCardIDs.Contains(cardInstanceID))
-            {
-                removedCardIDs.Add(cardInstanceID);
-            }
-        }
-
-        foreach(int cardInstanceID in removedCardIDs)
-        {
-            CardView cardView = localHandCardViews[cardInstanceID];
-            CardPreviewController.Hide(cardView);
-
-            // 立即停用并移出Hand，使本帧随后的布局不会统计到待销毁卡牌。
-            // 以后加入出牌、弃牌动画时，可在这里改为交给动画系统接管。
-            cardView.gameObject.SetActive(false);
-            cardView.transform.SetParent(transform, false);
-            Destroy(cardView.gameObject);
-            localHandCardViews.Remove(cardInstanceID);
-        }
 
         for(int i = 0; i < cards.Length; i++)
         {
             CardNetworkState cardState = cards[i];
+            CardView cardView = GetOrCreateCardView(cardState, handContainer);
 
-            if(!localHandCardViews.TryGetValue(
-                cardState.CardInstanceID,
-                out CardView cardView))
-            {
-                GameObject cardViewObject =
-                    Instantiate(CardViewPrefab, handContainer);
-                cardView = cardViewObject.GetComponent<CardView>();
-
-                localHandCardViews.Add(
-                    cardState.CardInstanceID,
-                    cardView);
-
-                // 本方手牌始终允许查看预览，并在悬浮时升起。
-                cardView.SetPointerActions(
-                    CardPreviewController.Show,
-                    CardPreviewController.Hide,
-                    true);
-            }
-
-            CardData cardData = GetCardDataByID(cardState.CardDataID);
-            cardView.UpdateCardView(
-                cardData.CardName,
-                cardData.Description,
-                cardState.currentPower,
-                cardState.CardInstanceID,
-                cardState.keywords,
-                cardState.isExhausted);
-
-            // CardView会被跨阶段复用，必须先清除上一次刷新留下的交互和选中状态。
-            cardView.SetClickAction(null);
-            cardView.SetSelected(false);
+            // 本方手牌始终允许查看预览，并在悬浮时升起。
+            cardView.SetPointerActions(
+                CardPreviewController.Show,
+                CardPreviewController.Hide,
+                true);
 
             if(currentPhase == GamePhase.WaitingForMainAction &&
                 isLocalPlayerExpected)
@@ -252,60 +212,29 @@ public class ViewController : MonoBehaviour
             // 服务器数组顺序同时决定手牌布局顺序和UI遮挡顺序。
             cardView.transform.SetSiblingIndex(i);
         }
-
-        handContainer.GetComponent<HandCardLayout>().RefreshLayout();
     }
 
-    public void RefreshHandOrFieldView(CardNetworkState[] cards,
+    // 增量刷新场地。双方场地都属于公开区域，因此共用统一CardView字典。
+    public void RefreshFieldView(CardNetworkState[] cards,
         Transform playerTransform,
-        string handOrField, 
         CardNetworkState pendingAttack, 
         CardNetworkState pendingTarget,
         PendingChoice pendingChoice)
     {
-        Transform handContainer = playerTransform.Find(handOrField);
-        // Destroy会到当前帧结束时才真正删除对象。
-        // 先把旧卡牌移出容器，避免本帧计算布局时把旧卡牌也统计进去。
-        for(int i = handContainer.childCount - 1; i >= 0; i--)
-        {
-            Transform child = handContainer.GetChild(i);
-            child.SetParent(null);
-            Destroy(child.gameObject);
-        }
-        // 创建新的手牌视图
+        Transform fieldContainer = playerTransform.Find("Field");
+        bool isLocalField = playerTransform == LocalPlayer;
+
         for(int i = 0; i < cards.Length; i++)
         {
-            GameObject cardViewObj = Instantiate(CardViewPrefab, handContainer);
-            CardView cardView = cardViewObj.GetComponent<CardView>();
-            // 创建CardInstance对象
-            CardData cardData = GetCardDataByID(cards[i].CardDataID);
-            cardView.UpdateCardView(cardData.CardName, 
-                cardData.Description, 
-                cards[i].currentPower, 
-                cards[i].CardInstanceID,
-                cards[i].keywords,
-                cards[i].isExhausted);
+            CardNetworkState cardState = cards[i];
+            CardView cardView = GetOrCreateCardView(cardState, fieldContainer);
 
-            bool isLocalHand = (playerTransform == LocalPlayer && handOrField == "Hand");
-            bool isLocalField = (playerTransform == LocalPlayer && handOrField == "Field");
+            // 双方场地都是明牌，可以查看预览，但不需要像手牌一样升起。
+            cardView.SetPointerActions(
+                CardPreviewController.Show,
+                CardPreviewController.Hide,
+                false);
 
-            // 本方手牌和双方场上的明牌可以查看预览；只有本方手牌会在悬浮时升起。
-            bool canShowPreview = isLocalHand || handOrField == "Field";
-            if(canShowPreview)
-            {
-                cardView.SetPointerActions(
-                    CardPreviewController.Show,
-                    CardPreviewController.Hide,
-                    isLocalHand);
-            }
-
-            //如果是本方手牌，且当前是本方主动回合，则绑定出牌事件
-            if(isLocalHand &&
-                currentPhase == GamePhase.WaitingForMainAction &&
-                isLocalPlayerExpected)
-            {
-                cardView.SetClickAction(PlayCardDecision);
-            }
             if(isLocalField &&
                 currentPhase == GamePhase.WaitingForMainAction &&
                 isLocalPlayerExpected)
@@ -325,50 +254,28 @@ public class ViewController : MonoBehaviour
                 isLocalPlayerExpected)
             {
                 //只给上次攻击的卡牌绑定攻击事件
-                if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
+                if(pendingAttack.CardInstanceID == cardState.CardInstanceID)
                 {
                     cardView.SetClickAction(AttackDecision);
                 }
             }
-            // 高亮显示当前待攻击决策的卡牌
-            if(pendingAttack.CardInstanceID == cards[i].CardInstanceID)
-            {
-                cardView.Highlight.SetActive(true);
-            }
-            else
-            {
-                cardView.Highlight.SetActive(false);
-            }
 
-            // 高亮显示当前被选中的卡牌
-            if(pendingTarget.CardInstanceID == cards[i].CardInstanceID)
-            {
-                cardView.Aimed.SetActive(true);
-            }
-            else
-            {
-                cardView.Aimed.SetActive(false);
-            }
+            cardView.Highlight.SetActive(
+                pendingAttack.CardInstanceID == cardState.CardInstanceID);
+            cardView.Aimed.SetActive(
+                pendingTarget.CardInstanceID == cardState.CardInstanceID);
+
             // 高亮显示当前待选择的卡牌
-            if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(cards[i].CardInstanceID))
+            bool isCandidate = pendingChoice != null &&
+                pendingChoice.CandidateCardInstanceIDs.Contains(
+                    cardState.CardInstanceID);
+            cardView.Candidate.SetActive(isCandidate);
+            if(isCandidate)
             {
-                cardView.Candidate.SetActive(true);
                 cardView.SetClickAction(ChooseDecision);
             }
-            else
-            {
-                cardView.Candidate.SetActive(false);
-            }
 
-        }
-
-        if(handOrField == "Hand")
-        {
-            handContainer.GetComponent<HandCardLayout>().RefreshLayout();
-        }
-        else
-        {
-            handContainer.GetComponent<FieldCardLayout>().RefreshLayout();
+            cardView.transform.SetSiblingIndex(i);
         }
     }
 
@@ -397,24 +304,15 @@ public class ViewController : MonoBehaviour
 
     public void RefreshPendingCardsView(CardNetworkState pendingCard)
     {
-        // 清空现有待决策卡牌视图
-        foreach (Transform child in PendingCardsContainer)
-        {
-            Destroy(child.gameObject);
-        }
         if(pendingCard.CardInstanceID == -1)
         {
-            
             return;
         }
-        GameObject cardViewObj = Instantiate(CardViewPrefab, PendingCardsContainer);
-        CardView cardView = cardViewObj.GetComponent<CardView>();
-        cardView.UpdateCardView(GetCardDataByID(pendingCard.CardDataID).CardName,
-            GetCardDataByID(pendingCard.CardDataID).Description,
-            pendingCard.currentPower, 
-            pendingCard.CardInstanceID, 
-            pendingCard.keywords, 
-            pendingCard.isExhausted);
+
+        CardView cardView = GetOrCreateCardView(
+            pendingCard,
+            PendingCardsContainer);
+        cardView.SetPointerActions(null, null, false);
         cardView.transform.localPosition = new Vector3(0, 0, 0); // 调整卡牌位置
         cardView.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // 确保卡牌缩放为0.5
     }
@@ -445,36 +343,91 @@ public class ViewController : MonoBehaviour
         PendingChoice pendingChoice)
     {
         Transform startPoint = isLocalPlayer ? DiscardPilePannel.Find("local") : DiscardPilePannel.Find("opponent");
-        // 清空现有弃牌堆视图
-        foreach (Transform child in startPoint)
-        {
-            Destroy(child.gameObject);
-        }
-        // 创建新的弃牌堆视图
+
         for(int i = 0; i < DiscardPile.Length; i++)
         {
-            GameObject cardViewObj = Instantiate(CardViewPrefab, startPoint);
-            CardView cardView = cardViewObj.GetComponent<CardView>();
-            cardView.UpdateCardView(GetCardDataByID(DiscardPile[i].CardDataID).CardName,
-                GetCardDataByID(DiscardPile[i].CardDataID).Description,
-                DiscardPile[i].currentPower, 
-                DiscardPile[i].CardInstanceID, 
-                DiscardPile[i].keywords, 
-                DiscardPile[i].isExhausted);
+            CardNetworkState cardState = DiscardPile[i];
+            CardView cardView = GetOrCreateCardView(cardState, startPoint);
+            cardView.SetPointerActions(null, null, false);
             cardView.transform.localPosition = new Vector3(i * 120, 0, 0); // 调整卡牌位置
             cardView.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f); // 确保卡牌缩放为0.4
-            if(pendingChoice != null && pendingChoice.CandidateCardInstanceIDs.Contains(DiscardPile[i].CardInstanceID))
+
+            bool isCandidate = pendingChoice != null &&
+                pendingChoice.CandidateCardInstanceIDs.Contains(
+                    cardState.CardInstanceID);
+            cardView.Candidate.SetActive(isCandidate);
+            if(isCandidate)
             {
-                cardView.Candidate.SetActive(true);
                 cardView.SetClickAction(ChooseDecision);
             }
-            else
-            {
-                cardView.Candidate.SetActive(false);
-            }
-            
+
+            cardView.transform.SetSiblingIndex(i);
         }
-        
+    }
+
+    // 取得某个实例唯一对应的CardView，并在卡牌跨区域时直接移动原对象。
+    private CardView GetOrCreateCardView(
+        CardNetworkState cardState,
+        Transform targetContainer)
+    {
+        visibleCardInstanceIDs.Add(cardState.CardInstanceID);
+
+        if(!cardViews.TryGetValue(cardState.CardInstanceID, out CardView cardView))
+        {
+            GameObject cardViewObject = Instantiate(CardViewPrefab, targetContainer);
+            cardView = cardViewObject.GetComponent<CardView>();
+            cardViews.Add(cardState.CardInstanceID, cardView);
+        }
+        else if(cardView.transform.parent != targetContainer)
+        {
+            // 离开原区域时结束旧的悬浮状态，并关闭仍然引用该卡牌的预览。
+            CardPreviewController.Hide(cardView);
+            cardView.ResetPointerState();
+            cardView.transform.SetParent(targetContainer, false);
+        }
+
+        CardData cardData = GetCardDataByID(cardState.CardDataID);
+        cardView.UpdateCardView(
+            cardData.CardName,
+            cardData.Description,
+            cardState.currentPower,
+            cardState.CardInstanceID,
+            cardState.keywords,
+            cardState.isExhausted);
+
+        // 同一个CardView会被不同区域复用，每次先清除旧区域留下的交互和标记。
+        cardView.SetClickAction(null);
+        cardView.SetSelected(false);
+        cardView.Highlight.SetActive(false);
+        cardView.Aimed.SetActive(false);
+        cardView.Candidate.SetActive(false);
+
+        return cardView;
+    }
+
+    // 只有在所有区域都没有出现的实例才真正离开当前客户端的可见状态。
+    private void RemoveInvisibleCardViews()
+    {
+        foreach(int cardInstanceID in cardViews.Keys)
+        {
+            if(!visibleCardInstanceIDs.Contains(cardInstanceID))
+            {
+                removedCardInstanceIDs.Add(cardInstanceID);
+            }
+        }
+
+        foreach(int cardInstanceID in removedCardInstanceIDs)
+        {
+            CardView cardView = cardViews[cardInstanceID];
+            CardPreviewController.Hide(cardView);
+            cardView.ResetPointerState();
+
+            // 立即停用并移出布局容器，Destroy会在当前帧结束时真正执行。
+            cardView.gameObject.SetActive(false);
+            cardView.transform.SetParent(transform, false);
+            Destroy(cardView.gameObject);
+            cardViews.Remove(cardInstanceID);
+        }
     }
     public void RefreshDeckCount(bool isLocalPlayer, int deckCount)
     {

@@ -59,6 +59,21 @@ public class CardView : MonoBehaviour,
         liftOnHover = shouldLiftOnHover;
     }
 
+    // CardView被移动到另一个区域或删除时，主动结束原区域的悬浮状态。
+    // 这里只恢复视觉位置；新的区域随后会重新设置层级和交互。
+    public void ResetPointerState()
+    {
+        if(isHovered && liftOnHover)
+        {
+            CardViewVisual.anchoredPosition = visualPositionBeforeHover;
+        }
+
+        isHovered = false;
+        liftOnHover = false;
+        pointerEnterAction = null;
+        pointerExitAction = null;
+    }
+
     public void UpdateCardView(string cardName,
         string cardDescribe, 
         int currentPower, 
