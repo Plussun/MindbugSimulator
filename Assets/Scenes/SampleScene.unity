@@ -3345,6 +3345,7 @@ GameObject:
   m_Component:
   - component: {fileID: 527901688}
   - component: {fileID: 527901689}
+  - component: {fileID: 527901690}
   m_Layer: 5
   m_Name: ViewObject
   m_TagString: Untagged
@@ -3400,6 +3401,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10d19c11da60b5bb9422b45d25b4eb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AnimationPlayer: {fileID: 527901690}
   CardViewPrefab: {fileID: 6304823684069433708, guid: bb47fbc069fd394cba5fdba2fbd57575, type: 3}
   LocalPlayer: {fileID: 382142601}
   OpponentPlayer: {fileID: 1901927035}
@@ -3419,6 +3421,18 @@ MonoBehaviour:
   InformationText: {fileID: 1110261507}
   gameController: {fileID: 1090925393}
   networkController: {fileID: 1090925396}
+--- !u!114 &527901690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 527901687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbbfb168d7d54a93b6221299c033f35d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &539176266
 GameObject:
   m_ObjectHideFlags: 0
@@ -4964,6 +4978,7 @@ MonoBehaviour:
         MaxSelectCount: 0
         MinSelectCount: 0
         CandidateCardInstanceIDs: 
+      PendingAnimationEvents: []
     AllCardsBase: []
   TestHand:
   - {fileID: 11400000, guid: c7f518523dab6f3989525948640dbd53, type: 2}
@@ -5059,7 +5074,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GameController: {fileID: 1090925393}
   viewController: {fileID: 527901689}
-  StatusText: {fileID: 1157867956}
 --- !u!1 &1110261505
 GameObject:
   m_ObjectHideFlags: 0

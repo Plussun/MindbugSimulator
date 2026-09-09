@@ -18,6 +18,10 @@ public class GameState
 
     public PendingChoice PendingChoice; // 当前正在等待玩家选择的选择事件
 
+    // 等待发送给显示端的动画事件。
+    // GameStateSnapshot 不会复制这个列表，避免状态副本中再次嵌套动画队列。
+    public List<GameAnimationEvent> PendingAnimationEvents = new List<GameAnimationEvent>();
+
 
     public GameState()
     {

@@ -9,6 +9,7 @@ public class GameEngine
     public GameState State;
     public EventQueue EventQueue = new EventQueue();
     public List<CardInstance> AllCardsBase = new List<CardInstance>();
+    private int nextAnimationSequenceID = 1;
 
     public GameEngine()
     {
@@ -175,7 +176,31 @@ public class GameEngine
             player.Hand.Add(drawnCard);
             Debug.Log("玩家" + playerID + "抽到卡牌" + drawnCard.CardData.CardName 
                 + "，当前手牌数量为" + player.Hand.Count);
+
+            // 每成功抽到一张牌，就保存该次变化完成后的独立状态副本。
+            RecordAnimationEvent(
+                GameAnimationType.DrawCard,
+                playerID,
+                drawnCard.CardInstanceID);
         }
+    }
+
+    // 所有规则方法都通过这个入口记录显示事件，保证序号和状态截取方式一致。
+    // StateRefresh 可在没有专用动画时使用，playerID和cardInstanceID保持默认值即可。
+    public void RecordAnimationEvent(
+        GameAnimationType animationType,
+        int playerID = -1,
+        int cardInstanceID = -1)
+    {
+        GameAnimationEvent animationEvent = new GameAnimationEvent(
+            nextAnimationSequenceID,
+            animationType,
+            GameStateSnapshot.Capture(State),
+            playerID,
+            cardInstanceID);
+
+        nextAnimationSequenceID++;
+        State.PendingAnimationEvents.Add(animationEvent);
     }
 
     public void ShuffleDeck(int playerID)
@@ -821,6 +846,11 @@ public class GameEngine
             player.Hand.Remove(card);
             player.DiscardPile.Add(card);
             Debug.Log("玩家" + playerID + "的手牌" + card.CardData.CardName + "被弃置，移至弃牌堆");
+
+            RecordAnimationEvent(
+                GameAnimationType.DiscardCard,
+                playerID,
+                card.CardInstanceID);
         }
         else
         {
@@ -992,6 +1022,7 @@ public class GameEngine
             return;
         }
         State = new GameState();
+        nextAnimationSequenceID = 1;
         Debug.Log("游戏重置，开始下一局");
         StartGame();
     }

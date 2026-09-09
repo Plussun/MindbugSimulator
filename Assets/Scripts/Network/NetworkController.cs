@@ -1,6 +1,5 @@
 using Unity.Netcode;
 using UnityEngine;
-using TMPro;
 using System.Collections.Generic;
 
 public class NetworkController : NetworkBehaviour
@@ -12,7 +11,6 @@ public class NetworkController : NetworkBehaviour
     NetworkManager networkManager;
     public ViewController viewController;
 
-    public TMP_Text StatusText;
 
     private GamePhase clientCurrentPhase = GamePhase.Setup;
 
@@ -176,259 +174,154 @@ public class NetworkController : NetworkBehaviour
 
     
 
-    //用于把Gamestate同步到两边的客户端
+    //把服务器本次产生的动画事件分别转换为两名玩家可见的数据并发送。
     private void SyncState()
     {
-        GameState state = GameController.GameEngine.State;
-        int phase = (int)state.CurrentPhase;
-        int winnerPlayerID = state.WinnerPlayerID;
-        int activePlayerId = state.ActivePlayerID;
-        int expectedPlayerId = state.ExpectedPlayerID;
+        GameEngine gameEngine = GameController.GameEngine;
 
-        CardNetworkState pendingCard = 
-            GetCardNetworkStateByCardInstance(state.PendingCardInstance);
-        CardNetworkState pendingAttackCard =
-            GetCardNetworkStateByCardInstance(state.PendingAttackCardInstance);
-        CardNetworkState pendingTargetCard =
-            GetCardNetworkStateByCardInstance(state.PendingHunterTargetCardInstance);
+        //即使本次没有专用动画，也用最终快照校正阶段、按钮和所有界面数据。
+        gameEngine.RecordAnimationEvent(GameAnimationType.StateRefresh);
 
-        
+        List<GameAnimationEvent> serverEvents =
+            gameEngine.State.PendingAnimationEvents;
 
-        CardNetworkState[] player0Hand = GetCardNetworkStates(state.Players[0].Hand);
-        CardNetworkState[] player0Field = GetCardNetworkStates(state.Players[0].Field);
-        CardNetworkState[] player0Discard = GetCardNetworkStates(state.Players[0].DiscardPile);
-        CardNetworkState[] player1Hand = GetCardNetworkStates(state.Players[1].Hand);
-        CardNetworkState[] player1Field = GetCardNetworkStates(state.Players[1].Field);
-        CardNetworkState[] player1Discard = GetCardNetworkStates(state.Players[1].DiscardPile);
+        ClientAnimationEvent[] player0Events =
+            CreateClientAnimationEvents(serverEvents, 0);
+        ClientAnimationEvent[] player1Events =
+            CreateClientAnimationEvents(serverEvents, 1);
 
-        int player0Life = state.Players[0].Life;
-        int player1Life = state.Players[1].Life;
-        int player0DeckCount = state.Players[0].Deck.Count;
-        int player1DeckCount = state.Players[1].Deck.Count;
-        int player0MindbugCount = state.Players[0].MindbugCount;
-        int player1MindbugCount = state.Players[1].MindbugCount;
+        ReceiveAnimationEventsClientRpc(
+            player0Events,
+            CreateClientRpcParams(player0ClientId));
+        ReceiveAnimationEventsClientRpc(
+            player1Events,
+            CreateClientRpcParams(player1ClientId));
 
-        // 设置目标客户端 ID 数组
-        ClientRpcParams rpcParamsPlayer0 = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                TargetClientIds = new ulong[] { player0ClientId }
-            }
-        };
-        ClientRpcParams rpcParamsPlayer1 = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                TargetClientIds = new ulong[] { player1ClientId }
-            }
-        };
-        PendingChoice player0PendingChoice;
-        PendingChoice player1PendingChoice;
-        if (state.PendingChoice != null)
-        {
-            if (state.PendingChoice.PlayerID == 0)
-            {
-                player0PendingChoice = state.PendingChoice;
-                player1PendingChoice = null;
-            }
-            else
-            {
-                player0PendingChoice = null;
-                player1PendingChoice = state.PendingChoice;
-            }
-        }
-        else
-        {
-            player0PendingChoice = null;
-            player1PendingChoice = null;
-        }
-        
-        //player0状态同步
-        UpdateStatusClientRpc(
-            phase,
-            winnerPlayerID,
-            activePlayerId,
-            expectedPlayerId,
-            0,
-            pendingCard,
-            pendingAttackCard,
-            pendingTargetCard,
-            player0Life,
-            player1Life,
-            player0DeckCount,
-            player1DeckCount,
-            player0MindbugCount,
-            player1MindbugCount,
-            player1Hand.Length,
-            player0Hand,
-            player0Field,
-            player1Field,
-            player0Discard,
-            player1Discard,
-            hasPendingChoice: player0PendingChoice != null,
-            maxSelectCount: player0PendingChoice?.MaxSelectCount ?? 0,
-            minSelectCount: player0PendingChoice?.MinSelectCount ?? 0,
-            candidateCardInstanceIDs: player0PendingChoice?.CandidateCardInstanceIDs?.ToArray()
-                ?? new int[0],
-            rpcParamsPlayer0
-        );
-        //player1状态同步
-        UpdateStatusClientRpc(
-            phase,
-            winnerPlayerID,
-            activePlayerId,
-            expectedPlayerId,
-            1,
-            pendingCard,
-            pendingAttackCard,
-            pendingTargetCard,
-            player1Life,
-            player0Life,
-            player1DeckCount,
-            player0DeckCount,
-            player1MindbugCount,
-            player0MindbugCount,
-            player0Hand.Length,
-            player1Hand,
-            player1Field,
-            player0Field,
-            player1Discard,
-            player0Discard,
-            hasPendingChoice: player1PendingChoice != null,
-            maxSelectCount: player1PendingChoice?.MaxSelectCount ?? 0,
-            minSelectCount: player1PendingChoice?.MinSelectCount ?? 0,
-            candidateCardInstanceIDs: player1PendingChoice?.CandidateCardInstanceIDs?.ToArray()
-                ?? new int[0],
-            rpcParamsPlayer1
-        );
+        //RPC调用已经把数据提交给NGO，服务器可以清除本批待发送事件。
+        serverEvents.Clear();
     }
 
-    //调试阶段用于观察两边同步的状态，真实项目中不应该网络直接修改界面
-    [ClientRpc]
-    private void UpdateStatusClientRpc(
-        int phase,
-        int winnerPlayerID,
-        int activePlayerId,
-        int expectedPlayerId,
-        int playerId,
-        CardNetworkState pendingCard,
-        CardNetworkState pendingAttackCard,
-        CardNetworkState pendingTargetCard,
-        int playerLife,
-        int opponentLife,
-        int playerDeckCount,
-        int opponentDeckCount,
-        int playerMindbugCount,
-        int opponentMindbugCount,
-        int opponentHandCount,
-        CardNetworkState[] playerHand,
-        CardNetworkState[] playerField,
-        CardNetworkState[] opponentField,
-        CardNetworkState[] playerDiscard,
-        CardNetworkState[] opponentDiscard,
-        bool hasPendingChoice,
-        int maxSelectCount,
-        int minSelectCount,
-        int[] candidateCardInstanceIDs,
-        ClientRpcParams clientRpcParams = default
-    )
+    private ClientRpcParams CreateClientRpcParams(ulong clientId)
     {
-        
-        if (StatusText != null)
+        return new ClientRpcParams
         {
-            string handText = GetCardDataString(playerHand);
-            string fieldText = GetCardDataString(playerField);
-            string opponentFieldText = GetCardDataString(opponentField);
-            string playerDiscardText = GetCardDataString(playerDiscard);
-            string opponentDiscardText = GetCardDataString(opponentDiscard);
-            GamePhase currentPhase = (GamePhase)phase;
-            string phaseText;
-            string actionText;
-
-            switch (currentPhase)
+            Send = new ClientRpcSendParams
             {
-                case GamePhase.Setup:
-                    phaseText = "准备阶段";
-                    actionText = "等待游戏开始";
-                    break;
-                case GamePhase.WaitingForMainAction:
-                    phaseText = "主要行动阶段";
-                    actionText = expectedPlayerId == playerId
-                        ? "请你出牌或发起攻击"
-                        : "等待对手行动";
-                    break;
-                case GamePhase.WaitingForFrenzyAttack:
-                    phaseText = "狂暴二次攻击阶段";
-                    actionText = expectedPlayerId == playerId
-                        ? "请选择是否再次攻击"
-                        : "等待对手决定是否再次攻击";
-                    break;
-                case GamePhase.WaitingForMindbugDecision:
-                    phaseText = "夺心虫决定阶段";
-                    actionText = expectedPlayerId == playerId
-                        ? "请你决定是否使用夺心虫"
-                        : "等待对手决定是否使用夺心虫";
-                    break;
-                case GamePhase.WaitingForBlockDecision:
-                    phaseText = "阻挡决定阶段";
-                    actionText = expectedPlayerId == playerId
-                        ? "请你决定是否阻挡"
-                        : "等待对手决定是否阻挡";
-                    break;
-                case GamePhase.GameOver:
-                    phaseText = "游戏结束";
-                    actionText = "对局已结束";
-                    break;
-                default:
-                    phaseText = currentPhase.ToString();
-                    actionText = "等待游戏状态更新";
-                    break;
+                TargetClientIds = new ulong[] { clientId }
             }
+        };
+    }
 
-            StatusText.text =
-                "【阶段】" + phaseText + "  回合玩家 " + activePlayerId + "\n" +
-                "【操作】" + actionText + "\n" +
-                "【敌方】手牌 " + opponentHandCount + "  生命 " + opponentLife + "\n" +
-                "场地：" + opponentFieldText + "\n" +
-                "弃牌：" + opponentDiscardText + "\n" +
-                "----------------\n" +
-                "【我方】生命 " + playerLife + "\n" +
-                "场地：" + fieldText + "\n" +
-                "手牌：" + handText + "\n" +
-                "弃牌：" + playerDiscardText;
-            Debug.Log(StatusText.text);
-            
+    private ClientAnimationEvent[] CreateClientAnimationEvents(
+        List<GameAnimationEvent> serverEvents,
+        int localPlayerID)
+    {
+        ClientAnimationEvent[] clientEvents =
+            new ClientAnimationEvent[serverEvents.Count];
+
+        for(int i = 0; i < serverEvents.Count; i++)
+        {
+            GameAnimationEvent serverEvent = serverEvents[i];
+
+            clientEvents[i] = new ClientAnimationEvent
+            {
+                SequenceID = serverEvent.SequenceID,
+                AnimationType = serverEvent.AnimationType,
+                PlayerID = serverEvent.PlayerID,
+                CardInstanceID = GetVisibleAnimationCardID(
+                    serverEvent,
+                    localPlayerID),
+                StateAfterEvent = CreateClientSnapshot(
+                    serverEvent.StateAfterEvent,
+                    localPlayerID)
+            };
         }
 
-        clientCurrentPhase = (GamePhase)phase;
-        viewController.RefreshView(
-                gamePhase: phase,
-                winnerPlayerID: winnerPlayerID,
-                localPlayerID: playerId,
-                ActivePlayerID: activePlayerId,
-                ExpectedPlayerID: expectedPlayerId,
-                localPlayerLife: playerLife,
-                opponentPlayerLife: opponentLife,
-                localPlayerDeckCount: playerDeckCount,
-                opponentPlayerDeckCount: opponentDeckCount,
-                localPlayerMindbugCount: playerMindbugCount,
-                opponentPlayerMindbugCount: opponentMindbugCount,
-                localPlayerDiscard: playerDiscard,
-                opponentPlayerDiscard: opponentDiscard,
-                localPlayerHand: playerHand,
-                localPlayerField: playerField,
-                opponentPlayerField: opponentField,
-                opponentHandCount: opponentHandCount,
-                pendingCard: pendingCard,
-                pendingAttack: pendingAttackCard,
-                pendingTarget: pendingTargetCard,
-                hasPendingChoice: hasPendingChoice,
-                maxSelectCount: maxSelectCount,
-                minSelectCount: minSelectCount,
-                candidateCardInstanceIDs: candidateCardInstanceIDs
-                
-            );
+        return clientEvents;
+    }
+
+    //对手抽到的牌仍然是隐藏信息，不向该客户端发送可以追踪的实例ID。
+    private int GetVisibleAnimationCardID(
+        GameAnimationEvent animationEvent,
+        int localPlayerID)
+    {
+        bool isOpponentDraw =
+            animationEvent.AnimationType == GameAnimationType.DrawCard &&
+            animationEvent.PlayerID != localPlayerID;
+
+        return isOpponentDraw ? -1 : animationEvent.CardInstanceID;
+    }
+
+    //把服务器完整快照转换成指定玩家视角的快照。
+    private ClientGameStateSnapshot CreateClientSnapshot(
+        GameStateSnapshot serverSnapshot,
+        int localPlayerID)
+    {
+        int opponentPlayerID = 1 - localPlayerID;
+        PlayerStateSnapshot localPlayer =
+            serverSnapshot.Players[localPlayerID];
+        PlayerStateSnapshot opponentPlayer =
+            serverSnapshot.Players[opponentPlayerID];
+
+        PendingChoiceSnapshot pendingChoice =
+            serverSnapshot.PendingChoice;
+        bool canSeePendingChoice =
+            pendingChoice != null &&
+            pendingChoice.PlayerID == localPlayerID;
+
+        return new ClientGameStateSnapshot
+        {
+            CurrentPhase = serverSnapshot.CurrentPhase,
+            WinnerPlayerID = serverSnapshot.WinnerPlayerID,
+            LocalPlayerID = localPlayerID,
+            ActivePlayerID = serverSnapshot.ActivePlayerID,
+            ExpectedPlayerID = serverSnapshot.ExpectedPlayerID,
+
+            LocalPlayerLife = localPlayer.Life,
+            OpponentPlayerLife = opponentPlayer.Life,
+            LocalPlayerMindbugCount = localPlayer.MindbugCount,
+            OpponentPlayerMindbugCount = opponentPlayer.MindbugCount,
+            LocalPlayerDeckCount = localPlayer.DeckCount,
+            OpponentPlayerDeckCount = opponentPlayer.DeckCount,
+            OpponentHandCount = opponentPlayer.Hand.Length,
+
+            LocalPlayerHand = localPlayer.Hand,
+            LocalPlayerField = localPlayer.Field,
+            OpponentPlayerField = opponentPlayer.Field,
+            LocalPlayerDiscard = localPlayer.DiscardPile,
+            OpponentPlayerDiscard = opponentPlayer.DiscardPile,
+
+            PendingCard = serverSnapshot.PendingCard,
+            PendingAttackCard = serverSnapshot.PendingAttackCard,
+            PendingTargetCard =
+                serverSnapshot.PendingHunterTargetCard,
+
+            HasPendingChoice = canSeePendingChoice,
+            MaxSelectCount = canSeePendingChoice
+                ? pendingChoice.MaxSelectCount
+                : 0,
+            MinSelectCount = canSeePendingChoice
+                ? pendingChoice.MinSelectCount
+                : 0,
+            CandidateCardInstanceIDs = canSeePendingChoice
+                ? pendingChoice.CandidateCardInstanceIDs
+                : new int[0]
+        };
+    }
+
+    [ClientRpc]
+    private void ReceiveAnimationEventsClientRpc(
+        ClientAnimationEvent[] animationEvents,
+        ClientRpcParams clientRpcParams = default)
+    {
+        if(animationEvents.Length > 0)
+        {
+            clientCurrentPhase =
+                animationEvents[animationEvents.Length - 1]
+                    .StateAfterEvent.CurrentPhase;
+        }
+
+        viewController.ReceiveAnimationEvents(animationEvents);
     }
 
     public int GetGamePhase()
@@ -456,72 +349,5 @@ public class NetworkController : NetworkBehaviour
         }
     }
 
-    //将服务器中的卡牌实例转换为RPC可以发送的数据
-    private CardNetworkState[] GetCardNetworkStates(List<CardInstance> cards)
-    {
-        CardNetworkState[] networkStates = new CardNetworkState[cards.Count];
 
-        for (int i = 0; i < cards.Count; i++)
-        {
-            networkStates[i] = new CardNetworkState
-            {
-                CardInstanceID = cards[i].CardInstanceID,
-                CardDataID = cards[i].CardData.CardDataID,
-                currentPower = cards[i].CurrentPower,
-                isExhausted = cards[i].IsExhausted,
-                keywords = (int)cards[i].CurrentKeywords
-            };
-        }
-
-        return networkStates;
-    }
-
-    //接收卡组从carddatabase中获取carddata并转换成string
-    private string GetCardDataString(CardNetworkState[] cards)
-    {
-        if (cards.Length == 0)
-        {
-            return "无";
-        }
-
-        string[] cardTexts = new string[cards.Length];
-        for(int i = 0; i < cards.Length; i++)
-        {
-            CardNetworkState card = cards[i];
-
-            CardData cardData = GameController.CardDatabase.Find(
-                c => c.CardDataID == card.CardDataID);
-            string cardName = cardData != null ? 
-                cardData.CardName : "未知卡牌";
-            cardTexts[i] = cardName + "[#" + card.CardInstanceID
-                + "/P" + card.currentPower + "]";
-        }
-        return string.Join(" ｜ ", cardTexts);
-    }
-
-    private CardNetworkState GetCardNetworkStateByCardInstance(CardInstance cardInstance)
-    {
-        if (cardInstance == null || cardInstance.CardData == null)
-        {
-            return new CardNetworkState
-            {
-                CardInstanceID = -1,
-                CardDataID = 0,
-                currentPower = 0,
-                isExhausted = false,
-                keywords = 0
-            };
-        }
-
-        return new CardNetworkState
-        {
-            CardInstanceID = cardInstance.CardInstanceID,
-            CardDataID = cardInstance.CardData.CardDataID,
-            currentPower = cardInstance.CurrentPower,
-            isExhausted = cardInstance.IsExhausted,
-            keywords = (int)cardInstance.CurrentKeywords
-        };
-    }
-        
-    
 }
