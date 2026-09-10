@@ -12,6 +12,7 @@ public class CardView : MonoBehaviour,
     IPointerExitHandler
 {
     public RectTransform CardViewVisual;
+    public GameObject CardFront;
     public GameObject CardBack;
     public GameObject Selected;
     public GameObject Aimed;
@@ -167,8 +168,9 @@ public class CardView : MonoBehaviour,
     // 在完整卡面和卡背之间切换。卡背不包含任何可供客户端读取的卡牌信息。
     public void SetCardBack(bool showCardBack)
     {
-        CardViewVisual.gameObject.SetActive(!showCardBack);
-        CardBack.SetActive(showCardBack);
+        // CardFront.gameObject.SetActive(!showCardBack);
+        // CardBack.SetActive(showCardBack);
+        this.GetComponent<Animator>().SetBool("ShowBack", showCardBack);
 
         if(showCardBack)
         {

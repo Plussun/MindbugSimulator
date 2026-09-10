@@ -34,6 +34,8 @@ public enum GameAnimationType
 {
     // 暂时没有专用动画，只需要把显示刷新到事件完成后的状态。
     StateRefresh,
+    // 卡牌从手牌进入待Mindbug决策区。
+    PlayCardToPending,
     DrawCard,
     DiscardCard
 }

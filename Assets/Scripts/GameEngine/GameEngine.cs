@@ -243,6 +243,14 @@ public class GameEngine
             SetExpectedPlayer(1 - playerID); // 假设有两个玩家，切换到另一个玩家
             State.PendingCardInstance = cardToPlay;
             player.Hand.Remove(cardToPlay);
+
+            // 先记录卡牌离开手牌、进入待选区后的状态，再进行补牌。
+            // 这样客户端会先移动旧手牌，再根据正确的手牌数量计算抽牌终点。
+            RecordAnimationEvent(
+                GameAnimationType.PlayCardToPending,
+                playerID,
+                cardToPlay.CardInstanceID);
+
             Refill(playerID); // 出牌后补充手牌
             Debug.Log("游戏阶段切换为" + State.CurrentPhase + 
                 "，等待玩家" + State.ExpectedPlayerID + "的Mindbug决策");
