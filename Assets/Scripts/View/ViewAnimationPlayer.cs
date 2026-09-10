@@ -51,16 +51,29 @@ public class ViewAnimationPlayer : MonoBehaviour
         while(elapsed < DrawDuration)
         {
             elapsed += Time.unscaledDeltaTime;
+
+            // 把已经播放的时间转换为0到1之间的进度：
+            // 0表示动画刚开始，1表示已经到达终点。
             float progress = Mathf.Clamp01(elapsed / DrawDuration);
+
+            // SmoothStep把匀速进度变成两端慢、中间快的进度，
+            // 让卡牌起步和停下时更加柔和。
             float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
 
+            // 先沿起点到终点之间的直线移动。
             Vector3 position = Vector3.Lerp(
                 startPosition,
                 targetPosition,
                 smoothProgress);
+
+            // sin(0)=0、sin(PI/2)=1、sin(PI)=0，
+            // 因此卡牌会在起点和终点保持原高度，并在动画中点达到最高处。
+            // 把这段额外高度叠加到直线位置上，就形成了向上拱起的弧线。
             position.y += Mathf.Sin(progress * Mathf.PI) * DrawArcHeight;
 
             cardRect.localPosition = position;
+
+            // 移动的同时从起始角度平滑旋转到手牌布局计算出的最终角度。
             cardRect.localRotation = Quaternion.Lerp(
                 startRotation,
                 targetRotation,

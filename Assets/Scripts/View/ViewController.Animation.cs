@@ -38,7 +38,7 @@ public partial class ViewController
             if(animationEvent.AnimationType == GameAnimationType.DrawCard &&
                 animationEvent.PlayerID == animationEvent.StateAfterEvent.LocalPlayerID)
             {
-                yield return PlayLocalDrawAnimation(animationEvent);
+                yield return ProcessLocalDrawEvent(animationEvent);
             }
             else
             {
@@ -52,7 +52,9 @@ public partial class ViewController
         isProcessingAnimation = false;
     }
 
-    private IEnumerator PlayLocalDrawAnimation(
+    // 准备本方抽牌事件所需的CardView和布局终点，
+    // 实际的移动与翻转仍交给ViewAnimationPlayer播放。
+    private IEnumerator ProcessLocalDrawEvent(
         ClientAnimationEvent animationEvent)
     {
         CardNetworkState[] handAfterDraw =
