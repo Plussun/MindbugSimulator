@@ -231,6 +231,7 @@ public class NetworkController : NetworkBehaviour
                 CardInstanceID = GetVisibleAnimationCardID(
                     serverEvent,
                     localPlayerID),
+                CardInstanceIDs = serverEvent.CardInstanceIDs ?? new int[0],
                 StateAfterEvent = CreateClientSnapshot(
                     serverEvent.StateAfterEvent,
                     localPlayerID)

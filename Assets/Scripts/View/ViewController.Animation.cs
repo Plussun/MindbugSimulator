@@ -33,22 +33,56 @@ public partial class ViewController
         {
             ClientAnimationEvent animationEvent = animationQueue.Dequeue();
 
-            // 抽牌前需要由ViewController准备实际CardView和布局终点。
-            if(animationEvent.AnimationType == GameAnimationType.DrawCard)
+            switch(animationEvent.AnimationType)
             {
-                if(animationEvent.PlayerID ==
-                    animationEvent.StateAfterEvent.LocalPlayerID)
-                {
-                    yield return ProcessLocalDrawEvent(animationEvent);
-                }
-                else
-                {
-                    yield return ProcessOpponentDrawEvent(animationEvent);
-                }
-            }
-            else
-            {
-                yield return AnimationPlayer.PlayAnimation(animationEvent);
+                case GameAnimationType.DrawCard:
+                    if(animationEvent.PlayerID ==
+                        animationEvent.StateAfterEvent.LocalPlayerID)
+                    {
+                        yield return ProcessLocalDrawEvent(animationEvent);
+                    }
+                    else
+                    {
+                        yield return ProcessOpponentDrawEvent(animationEvent);
+                    }
+                    break;
+
+                case GameAnimationType.PlayCardToPending:
+                    yield return ProcessPlayCardToPendingEvent(animationEvent);
+                    break;
+
+                case GameAnimationType.DeployCard:
+                    yield return ProcessDeployCardEvent(animationEvent, false);
+                    break;
+
+                case GameAnimationType.DeployCardFromDiscard:
+                    yield return ProcessDeployCardEvent(animationEvent, true);
+                    break;
+
+                case GameAnimationType.DiscardCard:
+                    yield return ProcessDiscardCardEvent(animationEvent);
+                    break;
+
+                case GameAnimationType.DefeatCards:
+                    yield return ProcessDefeatCardsEvent(animationEvent);
+                    break;
+
+                case GameAnimationType.TakeControlCards:
+                    yield return ProcessTakeControlCardsEvent(animationEvent);
+                    break;
+
+                case GameAnimationType.StealHandCards:
+                    yield return ProcessStealHandCardsEvent(animationEvent);
+                    break;
+
+                case GameAnimationType.ReturnDiscardPileToHand:
+                    yield return ProcessReturnDiscardPileToHandEvent(
+                        animationEvent);
+                    break;
+
+                default:
+                    yield return AnimationPlayer.PlayAnimation(animationEvent);
+                    break;
             }
 
             // 动画完成后再应用事件后的状态；增量刷新会继续复用刚才的CardView。
@@ -163,4 +197,5 @@ public partial class ViewController
             targetPosition,
             targetRotation);
     }
+
 }

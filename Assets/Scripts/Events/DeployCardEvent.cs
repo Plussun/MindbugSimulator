@@ -4,11 +4,16 @@ public class DeployCardEvent : GameEvent
 {
     public int PlayerID;
     public CardInstance CardInstanceToDeploy;
+    public GameAnimationType AnimationType;
 
-    public DeployCardEvent(int playerID, CardInstance cardInstance)
+    public DeployCardEvent(
+        int playerID,
+        CardInstance cardInstance,
+        GameAnimationType animationType = GameAnimationType.DeployCard)
     {
         PlayerID = playerID;
         CardInstanceToDeploy = cardInstance;
+        AnimationType = animationType;
     }
 
     public override void Resolve(GameEngine gameEngine)
@@ -34,6 +39,9 @@ public class DeployCardEvent : GameEvent
             }
         }
         gameEngine.EventQueue.EqueueNextRange(eventsToEnqueue);
-        gameEngine.DeployCard(PlayerID, CardInstanceToDeploy);
+        gameEngine.DeployCard(
+            PlayerID,
+            CardInstanceToDeploy,
+            AnimationType);
     }
 }

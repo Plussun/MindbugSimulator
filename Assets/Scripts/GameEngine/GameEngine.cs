@@ -190,14 +190,16 @@ public class GameEngine
     public void RecordAnimationEvent(
         GameAnimationType animationType,
         int playerID = -1,
-        int cardInstanceID = -1)
+        int cardInstanceID = -1,
+        int[] cardInstanceIDs = null)
     {
         GameAnimationEvent animationEvent = new GameAnimationEvent(
             nextAnimationSequenceID,
             animationType,
             GameStateSnapshot.Capture(State),
             playerID,
-            cardInstanceID);
+            cardInstanceID,
+            cardInstanceIDs);
 
         nextAnimationSequenceID++;
         State.PendingAnimationEvents.Add(animationEvent);
@@ -708,12 +710,23 @@ public class GameEngine
         }
     }
 
-    public void DeployCard(int playerID, CardInstance card)
+    public void DeployCard(
+        int playerID,
+        CardInstance card,
+        GameAnimationType animationType)
     {
         PlayerState player = State.Players[playerID];
         if(card != null)
         {
             player.Field.Add(card);
+
+            // 从待Mindbug决策区部署时，先清除PendingCard再截取动画快照，
+            // 避免同一张牌在快照中同时出现在待选区和场地。
+            if(State.PendingCardInstance == card)
+            {
+                State.PendingCardInstance = null;
+            }
+
             Debug.Log("玩家" + playerID + "部署了卡牌" + card.CardData.CardName);
         }
         else
@@ -721,6 +734,14 @@ public class GameEngine
             Debug.Log("玩家" + playerID + "没有要部署的卡牌");
         }
         RefreshFieldEffect(); // 刷新场上效果
+
+        if(card != null)
+        {
+            RecordAnimationEvent(
+                animationType,
+                playerID,
+                card.CardInstanceID);
+        }
     }
 
     public void TakeControlCards(
@@ -751,6 +772,15 @@ public class GameEngine
         }
 
         RefreshFieldEffect();
+
+        if(cardsToTake.Count > 0)
+        {
+            RecordAnimationEvent(
+                GameAnimationType.TakeControlCards,
+                newControllerPlayerID,
+                cardInstanceIDs: cardsToTake.ConvertAll(
+                    card => card.CardInstanceID).ToArray());
+        }
     }
 
     public void StealRandomHandCards(int playerID, int count)
@@ -778,6 +808,14 @@ public class GameEngine
 
         if(cardsToSteal.Count > 0)
         {
+            // 先记录偷牌后的双方手牌，再补充被偷玩家的手牌。
+            // 客户端会先播放偷牌动画，再处理后续的DrawCard事件。
+            RecordAnimationEvent(
+                GameAnimationType.StealHandCards,
+                playerID,
+                cardInstanceIDs: cardsToSteal.ConvertAll(
+                    card => card.CardInstanceID).ToArray());
+
             Refill(opponent.PlayerID);
         }
     }
@@ -793,10 +831,17 @@ public class GameEngine
         }
 
         int returnedCardCount = player.DiscardPile.Count;
+        int[] returnedCardInstanceIDs = player.DiscardPile.ConvertAll(
+            card => card.CardInstanceID).ToArray();
         player.Hand.AddRange(player.DiscardPile);
         player.DiscardPile.Clear();
         Debug.Log("玩家" + playerID + "将弃牌堆中的"
             + returnedCardCount + "张牌拿回手中");
+
+        RecordAnimationEvent(
+            GameAnimationType.ReturnDiscardPileToHand,
+            playerID,
+            cardInstanceIDs: returnedCardInstanceIDs);
     }
 
     //先统一判断所有卡牌的Tough，再把真正被击败的卡牌一起移入弃牌堆
@@ -842,6 +887,15 @@ public class GameEngine
         }
 
         RefreshFieldEffect(); // 所有卡牌处理完成后统一刷新场上效果
+
+        if(defeatedCards.Count > 0)
+        {
+            RecordAnimationEvent(
+                GameAnimationType.DefeatCards,
+                cardInstanceIDs: defeatedCards.ConvertAll(
+                    defeatedCard => defeatedCard.card.CardInstanceID).ToArray());
+        }
+
         return defeatedCards;
     }
 

@@ -1,6 +1,34 @@
 using System.Collections;
 using UnityEngine;
 
+// 一张卡牌在AnimationCanvas坐标系中的移动终点。
+// 多张卡牌同时阵亡或转移控制权时，可以组成数组一起播放。
+public struct CardMoveAnimationTarget
+{
+    // CardView在开始播放时已经位于AnimationCanvas中。
+    public CardView CardView;
+    // 以下三个值也都使用AnimationCanvas的本地坐标系。
+    public Vector3 TargetPosition;
+    public Quaternion TargetRotation;
+    public Vector3 TargetScale;
+    // 正数向上拱，负数向下拱，0表示直线移动。
+    public float ArcHeight;
+
+    public CardMoveAnimationTarget(
+        CardView cardView,
+        Vector3 targetPosition,
+        Quaternion targetRotation,
+        Vector3 targetScale,
+        float arcHeight)
+    {
+        CardView = cardView;
+        TargetPosition = targetPosition;
+        TargetRotation = targetRotation;
+        TargetScale = targetScale;
+        ArcHeight = arcHeight;
+    }
+}
+
 // 只负责播放单条显示动画。
 // 动画队列、状态刷新和整体播放流程由ViewController负责。
 public class ViewAnimationPlayer : MonoBehaviour
@@ -8,6 +36,10 @@ public class ViewAnimationPlayer : MonoBehaviour
     public float DrawDuration = 1.0f;
     public float DrawInterval = 0.2f;
     public float DrawArcHeight = 150f;
+    public float CardMoveDuration = 0.6f;
+    public float CardMoveArcHeight = 100f;
+    // 卡牌飞到弃牌堆图标时相对起始大小的缩放比例。
+    public float DiscardTargetScaleMultiplier = 0.6f;
 
     public IEnumerator PlayAnimation(ClientAnimationEvent animationEvent)
     {
@@ -47,7 +79,11 @@ public class ViewAnimationPlayer : MonoBehaviour
             cardView,
             targetPosition,
             targetRotation,
+            cardView.transform.localScale,
+            DrawDuration,
             DrawArcHeight);
+
+        yield return new WaitForSecondsRealtime(DrawInterval);
     }
 
     // 对手抽到的牌始终保持背面，并使用向下拱起的反向弧线。
@@ -60,60 +96,116 @@ public class ViewAnimationPlayer : MonoBehaviour
             cardView,
             targetPosition,
             targetRotation,
+            cardView.transform.localScale,
+            DrawDuration,
             -DrawArcHeight);
+
+        yield return new WaitForSecondsRealtime(DrawInterval);
     }
 
-    // 双方抽牌共用同一套移动和旋转计算，arcHeight的正负决定弧线方向。
-    private IEnumerator PlayCardMoveAnimation(
+    // 所有卡牌区域移动共用同一套位置、旋转和缩放计算。
+    // duration决定移动时间，arcHeight的正负决定弧线方向。
+    public IEnumerator PlayCardMoveAnimation(
         CardView cardView,
         Vector3 targetPosition,
         Quaternion targetRotation,
+        Vector3 targetScale,
+        float duration,
         float arcHeight)
     {
-        RectTransform cardRect = cardView.transform as RectTransform;
-        Vector3 startPosition = cardRect.localPosition;
-        Quaternion startRotation = cardRect.localRotation;
+        // 单张移动也包装成数组交给批量入口，保证所有卡牌移动只维护一套插值代码。
+        CardMoveAnimationTarget[] targets =
+        {
+            new CardMoveAnimationTarget(
+                cardView,
+                targetPosition,
+                targetRotation,
+                targetScale,
+                arcHeight)
+        };
+
+        yield return PlayCardMoveAnimations(targets, duration);
+    }
+
+    // 在同一个逐帧循环中移动多张牌，确保同时阵亡等动画真正同步开始和结束。
+    public IEnumerator PlayCardMoveAnimations(
+        CardMoveAnimationTarget[] targets,
+        float duration)
+    {
+        if(targets == null || targets.Length == 0)
+        {
+            yield break;
+        }
+
+        // 播放开始时冻结所有对象的起点，之后目标区域怎样刷新都不会改变本次轨迹。
+        Vector3[] startPositions = new Vector3[targets.Length];
+        Quaternion[] startRotations = new Quaternion[targets.Length];
+        Vector3[] startScales = new Vector3[targets.Length];
+
+        for(int i = 0; i < targets.Length; i++)
+        {
+            RectTransform cardRect =
+                targets[i].CardView.transform as RectTransform;
+            startPositions[i] = cardRect.localPosition;
+            startRotations[i] = cardRect.localRotation;
+            startScales[i] = cardRect.localScale;
+        }
 
         float elapsed = 0f;
-        while(elapsed < DrawDuration)
+        while(elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
 
             // 把已经播放的时间转换为0到1之间的进度：
             // 0表示动画刚开始，1表示已经到达终点。
-            float progress = Mathf.Clamp01(elapsed / DrawDuration);
+            float progress = Mathf.Clamp01(elapsed / duration);
 
             // SmoothStep把匀速进度变成两端慢、中间快的进度，
             // 让卡牌起步和停下时更加柔和。
             float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
 
-            // 先沿起点到终点之间的直线移动。
-            Vector3 position = Vector3.Lerp(
-                startPosition,
-                targetPosition,
-                smoothProgress);
+            // 所有目标在同一帧使用相同的progress，因此能够真正同时开始和结束。
+            for(int i = 0; i < targets.Length; i++)
+            {
+                CardMoveAnimationTarget target = targets[i];
+                RectTransform cardRect =
+                    target.CardView.transform as RectTransform;
 
-            // sin(0)=0、sin(PI/2)=1、sin(PI)=0，
-            // 因此弧线在起点和终点没有偏移，并在动画中点达到最大偏移。
-            // arcHeight为正时向上拱，为负时向下拱。
-            position.y += Mathf.Sin(progress * Mathf.PI) * arcHeight;
+                // 先沿起点到终点之间的直线移动。
+                Vector3 position = Vector3.Lerp(
+                    startPositions[i],
+                    target.TargetPosition,
+                    smoothProgress);
 
-            cardRect.localPosition = position;
+                // sin(0)=0、sin(PI/2)=1、sin(PI)=0，
+                // 因此弧线在起点和终点没有偏移，并在动画中点达到最大偏移。
+                // ArcHeight为正时向上拱，为负时向下拱。
+                position.y += Mathf.Sin(progress * Mathf.PI) *
+                    target.ArcHeight;
 
-            // 移动的同时从起始角度平滑旋转到手牌布局计算出的最终角度。
-            cardRect.localRotation = Quaternion.Lerp(
-                startRotation,
-                targetRotation,
-                smoothProgress);
+                cardRect.localPosition = position;
+                cardRect.localRotation = Quaternion.Lerp(
+                    startRotations[i],
+                    target.TargetRotation,
+                    smoothProgress);
+                cardRect.localScale = Vector3.Lerp(
+                    startScales[i],
+                    target.TargetScale,
+                    smoothProgress);
+            }
 
             yield return null;
         }
-        
-        yield return new WaitForSecondsRealtime(DrawInterval);
 
         // 明确写入终点，避免最后一帧因为浮点误差与正式布局产生轻微跳动。
-        cardRect.localPosition = targetPosition;
-        cardRect.localRotation = targetRotation;
+        for(int i = 0; i < targets.Length; i++)
+        {
+            RectTransform cardRect =
+                targets[i].CardView.transform as RectTransform;
+            cardRect.localPosition = targets[i].TargetPosition;
+            cardRect.localRotation = targets[i].TargetRotation;
+            cardRect.localScale = targets[i].TargetScale;
+        }
     }
 
     private IEnumerator PlayDiscardAnimation(ClientAnimationEvent animationEvent)

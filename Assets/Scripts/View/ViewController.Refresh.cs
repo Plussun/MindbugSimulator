@@ -169,6 +169,56 @@ public partial class ViewController
         return cardView;
     }
 
+    // 对手从手牌打出或弃掉卡牌后，该卡牌会由隐藏信息变成公开信息。
+    // 取一张匿名卡背写入公开数据，再把同一个对象交给统一字典继续管理。
+    private CardView PromoteOpponentHandCardToVisible(
+        CardNetworkState cardState)
+    {
+        int lastIndex = opponentHandViews.Count - 1;
+        CardView cardView = opponentHandViews[lastIndex];
+        opponentHandViews.RemoveAt(lastIndex);
+
+        cardViews.Add(cardState.CardInstanceID, cardView);
+
+        CardData cardData = GetCardDataByID(cardState.CardDataID);
+        cardView.UpdateCardView(
+            cardData.CardName,
+            cardData.Description,
+            cardState.currentPower,
+            cardState.CardInstanceID,
+            cardState.keywords,
+            cardState.isExhausted);
+
+        cardView.ResetPointerState();
+        cardView.SetClickAction(null);
+        cardView.SetSelected(false);
+        cardView.Highlight.SetActive(false);
+        cardView.Aimed.SetActive(false);
+        cardView.Candidate.SetActive(false);
+
+        return cardView;
+    }
+
+    // 一张本来可见的卡牌进入对手隐藏手牌时，移除真实ID映射并转成匿名卡背。
+    // 适用于本方手牌被对手偷走的显示过程。
+    private CardView ConvertVisibleCardToOpponentHand(int cardInstanceID)
+    {
+        CardView cardView = cardViews[cardInstanceID];
+        cardViews.Remove(cardInstanceID);
+
+        CardPreviewController.Hide(cardView);
+        cardView.ResetPointerState();
+        cardView.SetClickAction(null);
+        cardView.SetSelected(false);
+        cardView.Highlight.SetActive(false);
+        cardView.Aimed.SetActive(false);
+        cardView.Candidate.SetActive(false);
+        cardView.SetCardBack(true);
+
+        opponentHandViews.Add(cardView);
+        return cardView;
+    }
+
     public void RefreshPendingCardsView(CardNetworkState pendingCard)
     {
         if(pendingCard.CardInstanceID == -1)
