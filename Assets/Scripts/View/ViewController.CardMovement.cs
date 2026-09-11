@@ -6,6 +6,70 @@ using UnityEngine;
 // 实际逐帧移动统一交给ViewAnimationPlayer，事件完成后仍由ViewController应用快照。
 public partial class ViewController
 {
+    // 撞击结束后攻击牌仍属于原场地，不能一直挂在动画层下。
+    // 下一条阵亡事件也需要从原场地位置继续播放，因此这里完整恢复其姿态。
+    private IEnumerator ProcessCombatEvent(ClientAnimationEvent animationEvent)
+    {
+        if(!cardViews.TryGetValue(animationEvent.AttackerCardInstanceID, out CardView attackCard))
+        {
+            Debug.LogWarning("战斗动画找不到攻击牌，直接应用事件快照");
+            yield break;
+        }
+
+        Transform targetTransform;
+        if(animationEvent.BlockerCardInstanceID == -1)
+        {
+            // PlayerID是攻击玩家。两端视角相反：本方攻击对方头像，
+            // 对方攻击本方头像，不能固定使用OpponentPlayer。
+            bool isLocalAttacker = animationEvent.PlayerID ==
+                animationEvent.StateAfterEvent.LocalPlayerID;
+            targetTransform = (isLocalAttacker ? OpponentPlayer : LocalPlayer).Find("Portrait");
+        }
+        else if(cardViews.TryGetValue(animationEvent.BlockerCardInstanceID, out CardView blockCard))
+        {
+            targetTransform = blockCard.transform;
+        }
+        else
+        {
+            Debug.LogWarning("战斗动画找不到阻挡牌，直接应用事件快照");
+            yield break;
+        }
+
+        if(targetTransform == null)
+        {
+            Debug.LogWarning("战斗动画找不到玩家头像Portrait，直接应用事件快照");
+            yield break;
+        }
+
+        Transform cardTransform = attackCard.transform;
+        Transform originalParent = cardTransform.parent;
+        int originalSiblingIndex = cardTransform.GetSiblingIndex();
+        Vector3 originalPosition = cardTransform.localPosition;
+        Quaternion originalRotation = cardTransform.localRotation;
+        Vector3 originalScale = cardTransform.localScale;
+
+        CaptureAnimationStart(attackCard);
+        Vector3 targetPosition = AnimationCanvas.transform.InverseTransformPoint(
+            targetTransform.position);
+
+        try
+        {
+            yield return AnimationPlayer.PlayCombatAnimation(attackCard, targetPosition);
+        }
+        finally
+        {
+            // 保存的数值属于原父物体坐标系，先恢复父物体，再写回本地姿态。
+            if(attackCard != null)
+            {
+                cardTransform.SetParent(originalParent, false);
+                cardTransform.SetSiblingIndex(originalSiblingIndex);
+                cardTransform.localPosition = originalPosition;
+                cardTransform.localRotation = originalRotation;
+                cardTransform.localScale = originalScale;
+            }
+        }
+    }
+
     private struct CardAnimationStartPose
     {
         // 卡牌被移入AnimationCanvas后，在该坐标系中的起始姿态。
@@ -203,6 +267,23 @@ public partial class ViewController
     private IEnumerator ProcessDefeatCardsEvent(
         ClientAnimationEvent animationEvent)
     {
+        List<CardView> defeatedCardViews = new List<CardView>();
+
+        // 先收集仍位于场上的正式CardView。不能提前把它们移到AnimationCanvas，
+        // 否则死亡特效出现时，卡牌自身已经离开原来的场地位置。
+        foreach(int cardInstanceID in animationEvent.CardInstanceIDs)
+        {
+            if(cardViews.TryGetValue(cardInstanceID, out CardView cardView))
+            {
+                defeatedCardViews.Add(cardView);
+            }
+        }
+
+        // 同时阵亡的卡牌同时显示死亡特效；全部特效播完后再一起飞向弃牌堆。
+        yield return AnimationPlayer.PlayDefeatEffects(
+            defeatedCardViews.ToArray(),
+            AnimationCanvas.transform);
+
         List<CardMoveAnimationTarget> targets =
             new List<CardMoveAnimationTarget>();
 

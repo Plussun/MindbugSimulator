@@ -15,6 +15,10 @@ public class GameAnimationEvent
     // 单张卡牌事件仍然使用CardInstanceID，避免简单事件也变得难读。
     public int[] CardInstanceIDs;
 
+    // 分别记录战斗角色；BlockerCardInstanceID为-1时，目标是攻击玩家的对手头像。
+    public int AttackerCardInstanceID = -1;
+    public int BlockerCardInstanceID = -1;
+
     // 本事件完成后的显示状态。
     // 动画播放完毕后，显示端用它刷新并校正整个界面。
     public GameStateSnapshot StateAfterEvent;
@@ -25,7 +29,9 @@ public class GameAnimationEvent
         GameStateSnapshot stateAfterEvent,
         int playerID = -1,
         int cardInstanceID = -1,
-        int[] cardInstanceIDs = null)
+        int[] cardInstanceIDs = null,
+        int attackerCardInstanceID = -1,
+        int blockerCardInstanceID = -1)
     {
         SequenceID = sequenceID;
         AnimationType = animationType;
@@ -33,6 +39,8 @@ public class GameAnimationEvent
         PlayerID = playerID;
         CardInstanceID = cardInstanceID;
         CardInstanceIDs = cardInstanceIDs ?? new int[0];
+        AttackerCardInstanceID = attackerCardInstanceID;
+        BlockerCardInstanceID = blockerCardInstanceID;
     }
 }
 
@@ -57,5 +65,7 @@ public enum GameAnimationType
     // 一张或多张手牌在双方玩家之间转移。
     StealHandCards,
     // 一名玩家把自己的整个弃牌堆拿回手牌。
-    ReturnDiscardPileToHand
+    ReturnDiscardPileToHand,
+    // 撞击生物或玩家头像，快照保留扣血、阵亡和坚韧结算之前的场面。
+    Combat
 }

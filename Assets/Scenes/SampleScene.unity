@@ -3435,9 +3435,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbbfb168d7d54a93b6221299c033f35d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  CombatPrepareDuration: 0.5
+  CombatStrikeDuration: 0.12
+  CombatImpactPause: 0.2
+  CombatReturnDuration: 0.3
+  CombatScaleMultiplier: 1.3
+  CombatStopDistance: 60
+  DefeatEffectPrefab: {fileID: 3235998747157256439, guid: 99f9d64e81f4e0525bf79adb49510509, type: 3}
+  DefeatEffectDuration: 1
   DrawDuration: 0.8
   DrawInterval: 0.2
   DrawArcHeight: 150
+  CardMoveDuration: 0.6
+  CardMoveArcHeight: 100
+  DiscardTargetScaleMultiplier: 0.6
 --- !u!1 &539176266
 GameObject:
   m_ObjectHideFlags: 0

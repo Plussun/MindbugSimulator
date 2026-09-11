@@ -232,6 +232,8 @@ public class NetworkController : NetworkBehaviour
                     serverEvent,
                     localPlayerID),
                 CardInstanceIDs = serverEvent.CardInstanceIDs ?? new int[0],
+                AttackerCardInstanceID = serverEvent.AttackerCardInstanceID,
+                BlockerCardInstanceID = serverEvent.BlockerCardInstanceID,
                 StateAfterEvent = CreateClientSnapshot(
                     serverEvent.StateAfterEvent,
                     localPlayerID)

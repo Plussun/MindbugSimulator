@@ -33,6 +33,22 @@ public struct CardMoveAnimationTarget
 // 动画队列、状态刷新和整体播放流程由ViewController负责。
 public class ViewAnimationPlayer : MonoBehaviour
 {
+    [Header("战斗动画")]
+    public float CombatPrepareDuration = 0.10f;
+    public float CombatStrikeDuration = 0.12f;
+    public float CombatImpactPause = 0.06f;
+    public float CombatReturnDuration = 0.18f;
+    public float CombatScaleMultiplier = 1.12f;
+    // 在动画层的本地坐标中，撞击时与阻挡牌中心保留的距离。
+    public float CombatStopDistance = 50f;
+
+    [Header("阵亡特效")]
+    // 在Inspector中绑定DefeatEffect预制体。实例化后由预制体上的Animator自动播放。
+    public GameObject DefeatEffectPrefab;
+    // 应与DefeatEffect动画片段的长度一致；时间结束后销毁临时特效对象。
+    public float DefeatEffectDuration = 1f;
+
+    [Header("卡牌移动")]
     public float DrawDuration = 1.0f;
     public float DrawInterval = 0.2f;
     public float DrawArcHeight = 150f;
@@ -101,6 +117,36 @@ public class ViewAnimationPlayer : MonoBehaviour
             -DrawArcHeight);
 
         yield return new WaitForSecondsRealtime(DrawInterval);
+    }
+
+    // 正式CardView已由ViewController移入动画层，目标位置也使用该层坐标。
+    // 这里只播放动作；战斗结果和阵亡特效由后续事件处理。
+    public IEnumerator PlayCombatAnimation(CardView attackCard, Vector3 targetPosition)
+    {
+        Transform cardTransform = attackCard.transform;
+        Vector3 startPosition = cardTransform.localPosition;
+        Quaternion startRotation = cardTransform.localRotation;
+        Vector3 startScale = cardTransform.localScale;
+        Vector3 enlargedScale = startScale * CombatScaleMultiplier;
+
+        // 沿两张牌的连线接近目标；保留一点距离，避免两张牌中心完全重叠。
+        Vector3 direction = targetPosition - startPosition;
+        float stopDistance = Mathf.Clamp(CombatStopDistance, 0f, direction.magnitude);
+        Vector3 impactPosition = targetPosition - direction.normalized * stopDistance;
+
+        yield return PlayCardMoveAnimation(
+            attackCard, startPosition, startRotation, enlargedScale,
+            CombatPrepareDuration, 0f);
+        yield return PlayCardMoveAnimation(
+            attackCard, impactPosition, startRotation, enlargedScale,
+            CombatStrikeDuration, 0f);
+
+        // 短暂停在撞击点，给玩家看清接触瞬间的时间。
+        yield return new WaitForSecondsRealtime(CombatImpactPause);
+
+        yield return PlayCardMoveAnimation(
+            attackCard, startPosition, startRotation, startScale,
+            CombatReturnDuration, 0f);
     }
 
     // 所有卡牌区域移动共用同一套位置、旋转和缩放计算。
@@ -205,6 +251,54 @@ public class ViewAnimationPlayer : MonoBehaviour
             cardRect.localPosition = targets[i].TargetPosition;
             cardRect.localRotation = targets[i].TargetRotation;
             cardRect.localScale = targets[i].TargetScale;
+        }
+    }
+
+    // 在所有真正阵亡的卡牌上同时播放特效。
+    // 这里生成的只是短暂的特效对象，正式CardView仍由之后的弃牌移动动画继续复用。
+    public IEnumerator PlayDefeatEffects(
+        CardView[] defeatedCards,
+        Transform effectParent)
+    {
+        if(defeatedCards == null || defeatedCards.Length == 0)
+        {
+            yield break;
+        }
+
+        if(DefeatEffectPrefab == null)
+        {
+            Debug.LogError("ViewAnimationPlayer没有绑定DefeatEffect预制体");
+            yield break;
+        }
+
+        GameObject[] effects = new GameObject[defeatedCards.Length];
+
+        for(int i = 0; i < defeatedCards.Length; i++)
+        {
+            if(defeatedCards[i] == null)
+            {
+                continue;
+            }
+
+            // 特效放在AnimationCanvas最上层，并使用卡牌中心的世界坐标。
+            // 因此卡牌属于本方还是对方、处于哪个场地，都不需要分别换算位置。
+            GameObject effect = Instantiate(DefeatEffectPrefab, effectParent);
+            RectTransform effectRect = effect.transform as RectTransform;
+            effectRect.position = defeatedCards[i].transform.position;
+            effectRect.localRotation = Quaternion.identity;
+            effectRect.SetAsLastSibling();
+            effects[i] = effect;
+        }
+
+        // 使用Realtime保证以后即使暂停Time.timeScale，界面特效仍能正常播完。
+        yield return new WaitForSecondsRealtime(DefeatEffectDuration);
+
+        for(int i = 0; i < effects.Length; i++)
+        {
+            if(effects[i] != null)
+            {
+                Destroy(effects[i]);
+            }
         }
     }
 

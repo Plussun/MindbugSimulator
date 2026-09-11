@@ -10,6 +10,8 @@ public struct ClientAnimationEvent : INetworkSerializable
     public int PlayerID;
     public int CardInstanceID;
     public int[] CardInstanceIDs;
+    public int AttackerCardInstanceID;
+    public int BlockerCardInstanceID;
     public ClientGameStateSnapshot StateAfterEvent;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer)
@@ -20,6 +22,8 @@ public struct ClientAnimationEvent : INetworkSerializable
         serializer.SerializeValue(ref PlayerID);
         serializer.SerializeValue(ref CardInstanceID);
         serializer.SerializeValue(ref CardInstanceIDs);
+        serializer.SerializeValue(ref AttackerCardInstanceID);
+        serializer.SerializeValue(ref BlockerCardInstanceID);
         serializer.SerializeValue(ref StateAfterEvent);
     }
 }

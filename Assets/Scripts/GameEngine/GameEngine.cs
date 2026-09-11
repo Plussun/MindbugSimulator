@@ -191,7 +191,9 @@ public class GameEngine
         GameAnimationType animationType,
         int playerID = -1,
         int cardInstanceID = -1,
-        int[] cardInstanceIDs = null)
+        int[] cardInstanceIDs = null,
+        int attackerCardInstanceID = -1,
+        int blockerCardInstanceID = -1)
     {
         GameAnimationEvent animationEvent = new GameAnimationEvent(
             nextAnimationSequenceID,
@@ -199,7 +201,9 @@ public class GameEngine
             GameStateSnapshot.Capture(State),
             playerID,
             cardInstanceID,
-            cardInstanceIDs);
+            cardInstanceIDs,
+            attackerCardInstanceID,
+            blockerCardInstanceID);
 
         nextAnimationSequenceID++;
         State.PendingAnimationEvents.Add(animationEvent);
@@ -406,6 +410,14 @@ public class GameEngine
                 Debug.Log("由于有被狩猎目标，不允许不阻挡");
                 return;
             }
+            // NoBlock直接在本分支扣血，不会经过ResolveCombat。
+            // 必须先记录撞击头像的事件，再扣血；致命一击提前return时也能正常播放。
+            RecordAnimationEvent(
+                GameAnimationType.Combat,
+                playerID: State.ActivePlayerID,
+                attackerCardInstanceID: State.PendingAttackCardInstance.CardInstanceID,
+                blockerCardInstanceID: -1);
+
             //死了
             if(LoseLife(State.ExpectedPlayerID, 1))
             {
@@ -581,6 +593,14 @@ public class GameEngine
     {
         List<(int playerID, int cardInstanceID)> defeatTargets =
             new List<(int, int)>();
+
+        // 所有攻击都先记录撞击，再结算扣血、坚韧或阵亡。
+        // 没有阻挡时用-1表示直接攻击玩家，客户端把目标定位到防守方头像。
+        RecordAnimationEvent(
+            GameAnimationType.Combat,
+            playerID: State.ActivePlayerID,
+            attackerCardInstanceID: attackCard.CardInstanceID,
+            blockerCardInstanceID: blockCard == null ? -1 : blockCard.CardInstanceID);
 
         if (blockCard == null)
         {

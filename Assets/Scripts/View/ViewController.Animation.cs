@@ -67,6 +67,10 @@ public partial class ViewController
                     yield return ProcessDefeatCardsEvent(animationEvent);
                     break;
 
+                case GameAnimationType.Combat:
+                    yield return ProcessCombatEvent(animationEvent);
+                    break;
+
                 case GameAnimationType.TakeControlCards:
                     yield return ProcessTakeControlCardsEvent(animationEvent);
                     break;
