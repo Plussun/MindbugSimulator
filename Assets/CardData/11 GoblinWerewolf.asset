@@ -17,6 +17,7 @@ MonoBehaviour:
   Power: 2
   Description: "\u5728\u4F60\u7684\u56DE\u5408\u4E2D\uFF0C\u5B83\u83B7\u5F97+6\u529B\u91CF\u3002"
   Copies: 2
+  CardImage: {fileID: 21300000, guid: c57f612159108965e8705f94c3ed8a0e, type: 3}
   CardKeywords: 16
   CardEffects: []
   CardFieldEffects:

@@ -61,7 +61,8 @@ public class CardPreviewController : MonoBehaviour
             sourceCard.CurrentPower,
             sourceCard.CardInstanceID,
             (int)sourceCard.CurrentKeywords,
-            false);
+            false,
+            sourceCard.CardImage.sprite);
 
         previewCardRect.localScale = Vector3.one * PreviewScale;
         PositionPreview(sourceCard);

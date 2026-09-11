@@ -187,7 +187,9 @@ public partial class ViewController
             cardState.currentPower,
             cardState.CardInstanceID,
             cardState.keywords,
-            cardState.isExhausted);
+            cardState.isExhausted,
+            cardData.CardImage
+            );
 
         cardView.ResetPointerState();
         cardView.SetClickAction(null);
@@ -312,7 +314,8 @@ public partial class ViewController
             cardState.currentPower,
             cardState.CardInstanceID,
             cardState.keywords,
-            cardState.isExhausted);
+            cardState.isExhausted,
+            cardData.CardImage);
 
         // 同一个CardView会被不同区域复用，每次先清除旧区域留下的交互和标记。
         cardView.SetClickAction(null);
@@ -350,10 +353,16 @@ public partial class ViewController
     }
     public void RefreshDeckCount(bool isLocalPlayer, int deckCount)
     {
-        Transform portraitTransform = 
+        Transform deckTransform =
             isLocalPlayer ? LocalPlayer.Find("Deck") : OpponentPlayer.Find("Deck");
-        TMP_Text deckText = portraitTransform.Find("DeckCount").GetComponent<TMP_Text>();
+        TMP_Text deckText = deckTransform.Find("DeckCount").GetComponent<TMP_Text>();
         deckText.text = deckCount.ToString();
+
+        // 数字和牌堆使用同一份快照数量，不从文字反向读取。
+        if(deckTransform.TryGetComponent(out DeckPileView deckPileView))
+        {
+            deckPileView.RefreshPile(deckCount);
+        }
     }
 
     public void RefreshWinnerView(int winnerPlayerID,int localPlayerID)

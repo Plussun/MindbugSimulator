@@ -17,6 +17,7 @@ MonoBehaviour:
   Power: 3
   Description: 
   Copies: 2
+  CardImage: {fileID: 21300000, guid: 4badb07a8618a227fba20600faa69a05, type: 3}
   CardKeywords: 3
   CardEffects: []
   CardFieldEffects: []

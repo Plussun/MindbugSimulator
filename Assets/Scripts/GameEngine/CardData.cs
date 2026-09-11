@@ -8,6 +8,7 @@ public class CardData:ScriptableObject
     public int Power;
     public string Description = "No description provided.";
     public int Copies = 1;
+    public Sprite CardImage;
 
     public Keywords CardKeywords;
 

@@ -17,6 +17,7 @@ MonoBehaviour:
   Power: 6
   Description: "\u88AB\u51FB\u8D25\uFF1A\u4ECE\u5BF9\u624B\u624B\u4E2D\u968F\u673A\u5077\u53D62\u5F20\u724C\u3002"
   Copies: 1
+  CardImage: {fileID: 21300000, guid: 474ce89ace1398f80b3c9be8a9c3e559, type: 3}
   CardKeywords: 0
   CardEffects:
   - {fileID: 11400000, guid: 2bf84ce37e7d5688a857885020158f69, type: 2}

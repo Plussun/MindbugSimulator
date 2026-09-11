@@ -18,7 +18,9 @@ public class CardView : MonoBehaviour,
     public GameObject Aimed;
     public GameObject Highlight;
     public GameObject Candidate;
+    public Image CardImage;
     public RectTransform CardBackground;
+
 
     public TMP_Text CardNameText;
     public TMP_Text CardPowerText;
@@ -84,7 +86,8 @@ public class CardView : MonoBehaviour,
         int currentPower, 
         int cardInstanceID, 
         int currentKeywords,
-        bool isExhausted)
+        bool isExhausted,
+        Sprite cardImage)
     {
         // 只要写入了完整卡牌数据，就按正面卡牌显示。
         SetCardBack(false);
@@ -95,6 +98,7 @@ public class CardView : MonoBehaviour,
 
         CardNameText.text = cardName;
         CardPowerText.text = currentPower.ToString();
+        CardImage.sprite = cardImage;
         Keywords newKeywords = (Keywords)currentKeywords;
         if(CurrentKeywords != newKeywords)
         {

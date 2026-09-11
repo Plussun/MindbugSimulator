@@ -126,6 +126,12 @@ public partial class ViewController
 
         Transform handContainer = LocalPlayer.Find("Hand");
         Transform deckTransform = LocalPlayer.Find("Deck");
+        // 顶层卡背固定在StartPoint，抽牌也从这里出发。
+        if(deckTransform.TryGetComponent(out DeckPileView deckPile) &&
+            deckPile.DeckStartPoint != null)
+        {
+            deckTransform = deckPile.DeckStartPoint;
+        }
         HandCardLayout handLayout = handContainer.GetComponent<HandCardLayout>();
 
         // 这是该实例唯一的正式CardView。先注册到统一字典，后续快照不会再次创建。
@@ -175,6 +181,11 @@ public partial class ViewController
 
         Transform handContainer = OpponentPlayer.Find("Hand");
         Transform deckTransform = OpponentPlayer.Find("Deck");
+        if(deckTransform.TryGetComponent(out DeckPileView deckPile) &&
+            deckPile.DeckStartPoint != null)
+        {
+            deckTransform = deckPile.DeckStartPoint;
+        }
         HandCardLayout handLayout = handContainer.GetComponent<HandCardLayout>();
 
         CardView cardView = CreateOpponentHandCard(handContainer);
