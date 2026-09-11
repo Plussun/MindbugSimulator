@@ -39,6 +39,10 @@ public partial class ViewController : MonoBehaviour
     private Dictionary<int, CardView> cardViews =
         new Dictionary<int, CardView>();
 
+    // 对手手牌只公开数量，不公开真实实例ID，因此单独保存为匿名卡背列表。
+    // 列表中的CardView只代表一张未知手牌，不能加入上面的真实卡牌字典。
+    private List<CardView> opponentHandViews = new List<CardView>();
+
     // 每次刷新时记录新状态中仍然可见的卡牌，最后再统一删除真正消失的对象。
     private HashSet<int> visibleCardInstanceIDs = new HashSet<int>();
     private List<int> removedCardInstanceIDs = new List<int>();

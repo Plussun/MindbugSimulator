@@ -19,8 +19,7 @@ public class ViewAnimationPlayer : MonoBehaviour
                 yield break;
 
             case GameAnimationType.DrawCard:
-                // 本方抽牌由ViewController准备实际CardView后调用另一个重载。
-                // 对手抽牌暂时不播放动画，直接进入该事件的最终状态刷新。
+                // 双方抽牌都由ViewController准备实际CardView后调用对应方法。
                 yield break;
 
             case GameAnimationType.DiscardCard:
@@ -39,13 +38,41 @@ public class ViewAnimationPlayer : MonoBehaviour
         Vector3 targetPosition,
         Quaternion targetRotation)
     {
+        Animator animator = cardView.GetComponent<Animator>();
+
+        // 本方抽牌需要翻到正面；根节点移动仍由下面的共用协程负责。
+        animator.SetTrigger("Flip");
+
+        yield return PlayCardMoveAnimation(
+            cardView,
+            targetPosition,
+            targetRotation,
+            DrawArcHeight);
+    }
+
+    // 对手抽到的牌始终保持背面，并使用向下拱起的反向弧线。
+    public IEnumerator PlayOpponentDrawAnimation(
+        CardView cardView,
+        Vector3 targetPosition,
+        Quaternion targetRotation)
+    {
+        yield return PlayCardMoveAnimation(
+            cardView,
+            targetPosition,
+            targetRotation,
+            -DrawArcHeight);
+    }
+
+    // 双方抽牌共用同一套移动和旋转计算，arcHeight的正负决定弧线方向。
+    private IEnumerator PlayCardMoveAnimation(
+        CardView cardView,
+        Vector3 targetPosition,
+        Quaternion targetRotation,
+        float arcHeight)
+    {
         RectTransform cardRect = cardView.transform as RectTransform;
         Vector3 startPosition = cardRect.localPosition;
         Quaternion startRotation = cardRect.localRotation;
-        Animator animator = cardView.GetComponent<Animator>();
-
-        // Animator只控制CardViewVisual的翻转，根节点移动仍由下面的协程负责。
-        animator.SetTrigger("Flip");
 
         float elapsed = 0f;
         while(elapsed < DrawDuration)
@@ -67,9 +94,9 @@ public class ViewAnimationPlayer : MonoBehaviour
                 smoothProgress);
 
             // sin(0)=0、sin(PI/2)=1、sin(PI)=0，
-            // 因此卡牌会在起点和终点保持原高度，并在动画中点达到最高处。
-            // 把这段额外高度叠加到直线位置上，就形成了向上拱起的弧线。
-            position.y += Mathf.Sin(progress * Mathf.PI) * DrawArcHeight;
+            // 因此弧线在起点和终点没有偏移，并在动画中点达到最大偏移。
+            // arcHeight为正时向上拱，为负时向下拱。
+            position.y += Mathf.Sin(progress * Mathf.PI) * arcHeight;
 
             cardRect.localPosition = position;
 

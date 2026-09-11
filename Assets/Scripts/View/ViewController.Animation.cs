@@ -33,12 +33,18 @@ public partial class ViewController
         {
             ClientAnimationEvent animationEvent = animationQueue.Dequeue();
 
-            // 本方抽牌需要先由ViewController准备唯一的CardView和真实布局终点。
-            // 其他事件仍然直接交给动画播放器处理。
-            if(animationEvent.AnimationType == GameAnimationType.DrawCard &&
-                animationEvent.PlayerID == animationEvent.StateAfterEvent.LocalPlayerID)
+            // 抽牌前需要由ViewController准备实际CardView和布局终点。
+            if(animationEvent.AnimationType == GameAnimationType.DrawCard)
             {
-                yield return ProcessLocalDrawEvent(animationEvent);
+                if(animationEvent.PlayerID ==
+                    animationEvent.StateAfterEvent.LocalPlayerID)
+                {
+                    yield return ProcessLocalDrawEvent(animationEvent);
+                }
+                else
+                {
+                    yield return ProcessOpponentDrawEvent(animationEvent);
+                }
             }
             else
             {
@@ -108,6 +114,51 @@ public partial class ViewController
         cardRect.localRotation = Quaternion.identity;
 
         yield return AnimationPlayer.PlayDrawAnimation(
+            cardView,
+            targetPosition,
+            targetRotation);
+    }
+
+    // 敌方手牌没有真实实例ID，因此创建一张匿名卡背来表示本次抽牌。
+    // 动画结束后的快照刷新会继续复用这张CardView。
+    private IEnumerator ProcessOpponentDrawEvent(
+        ClientAnimationEvent animationEvent)
+    {
+        int handCountAfterDraw =
+            animationEvent.StateAfterEvent.OpponentHandCount;
+
+        // 正常情况下每个DrawCard事件只会让手牌数量增加一张。
+        // 如果当前数量已经达到快照数量，直接交给最终快照校正，避免重复创建。
+        if(opponentHandViews.Count >= handCountAfterDraw)
+        {
+            Debug.LogWarning("敌方抽牌事件没有增加手牌数量，跳过抽牌动画");
+            yield break;
+        }
+
+        Transform handContainer = OpponentPlayer.Find("Hand");
+        Transform deckTransform = OpponentPlayer.Find("Deck");
+        HandCardLayout handLayout = handContainer.GetComponent<HandCardLayout>();
+
+        CardView cardView = CreateOpponentHandCard(handContainer);
+        cardView.transform.SetAsLastSibling();
+
+        // 先把新卡加入敌方手牌布局，取得抽牌完成后真正的目标位置和角度。
+        handLayout.RefreshLayout();
+
+        RectTransform cardRect = cardView.transform as RectTransform;
+        cardRect.SetParent(AnimationCanvas.transform, true);
+        cardRect.SetAsLastSibling();
+
+        // 保留布局计算出的终点，再把同一张匿名卡背移动到敌方牌库作为起点。
+        Vector3 targetPosition = cardRect.localPosition;
+        Quaternion targetRotation = cardRect.localRotation;
+        Vector3 startPosition = AnimationCanvas.transform.InverseTransformPoint(
+            deckTransform.position);
+
+        cardRect.localPosition = startPosition;
+        cardRect.localRotation = Quaternion.identity;
+
+        yield return AnimationPlayer.PlayOpponentDrawAnimation(
             cardView,
             targetPosition,
             targetRotation);

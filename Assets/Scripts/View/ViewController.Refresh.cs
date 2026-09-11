@@ -116,27 +116,57 @@ public partial class ViewController
         }
     }
 
-    // 刷新对手手牌视图，显示为背面,并且数量与对手手牌数量一致
+    // 增量刷新对手手牌。对手手牌没有公开实例ID，只按数量维护匿名卡背。
     public void RefreshOpponentHandView(int opponentHandCount, Transform opponentTransform)
     {
         Transform handContainer = opponentTransform.Find("Hand");
-        // 先移出容器再销毁，使随后生成的新手牌可以立刻按正确数量居中。
-        for(int i = handContainer.childCount - 1; i >= 0; i--)
+
+        // 手牌增加时只创建缺少的卡背，已有卡背继续复用。
+        while(opponentHandViews.Count < opponentHandCount)
         {
-            Transform child = handContainer.GetChild(i);
-            child.SetParent(null);
-            Destroy(child.gameObject);
+            CreateOpponentHandCard(handContainer);
         }
-        // 创建新的手牌视图
-        for(int i = 0; i < opponentHandCount; i++)
+
+        // 手牌减少时只移除多出的卡背。
+        while(opponentHandViews.Count > opponentHandCount)
         {
-            GameObject cardViewObj = Instantiate(CardViewPrefab, handContainer);
-            CardView cardView = cardViewObj.GetComponent<CardView>();
-            // 对手手牌只显示卡背，不向该客户端填入任何真实卡牌数据。
+            int lastIndex = opponentHandViews.Count - 1;
+            CardView cardView = opponentHandViews[lastIndex];
+            opponentHandViews.RemoveAt(lastIndex);
+
+            // 立即移出手牌布局，Destroy会在当前帧结束时真正执行。
+            cardView.gameObject.SetActive(false);
+            cardView.transform.SetParent(opponentTransform, false);
+            Destroy(cardView.gameObject);
+        }
+
+        // 保证仍存在的对象都位于敌方手牌容器，并维持稳定的排列顺序。
+        for(int i = 0; i < opponentHandViews.Count; i++)
+        {
+            CardView cardView = opponentHandViews[i];
+            if(cardView.transform.parent != handContainer)
+            {
+                cardView.transform.SetParent(handContainer, false);
+            }
+
             cardView.SetCardBack(true);
+            cardView.transform.SetSiblingIndex(i);
         }
 
         handContainer.GetComponent<HandCardLayout>().RefreshLayout();
+    }
+
+    // 创建一张不带真实实例ID的敌方手牌，并登记到匿名卡背列表。
+    // 普通增量刷新和敌方抽牌动画都通过这个入口取得同一种CardView。
+    private CardView CreateOpponentHandCard(Transform handContainer)
+    {
+        GameObject cardViewObject = Instantiate(CardViewPrefab, handContainer);
+        CardView cardView = cardViewObject.GetComponent<CardView>();
+        cardView.SetCardBack(true);
+        cardView.SetClickAction(null);
+        cardView.SetPointerActions(null, null, false);
+        opponentHandViews.Add(cardView);
+        return cardView;
     }
 
     public void RefreshPendingCardsView(CardNetworkState pendingCard)
