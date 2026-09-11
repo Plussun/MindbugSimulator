@@ -251,10 +251,15 @@ public partial class ViewController
 
     public void RefreshDiscardCount(bool isLocalPlayer, int discardCount)
     {
-        Transform portraitTransform = 
+        Transform discardTransform = 
             isLocalPlayer ? LocalPlayer.Find("Discard") : OpponentPlayer.Find("Discard");
-        TMP_Text discardText = portraitTransform.Find("DiscardCount").GetComponent<TMP_Text>();
+        TMP_Text discardText = discardTransform.Find("DiscardCount").GetComponent<TMP_Text>();
         discardText.text = discardCount.ToString();
+        // 数字和牌堆使用同一份快照数量，不从文字反向读取。
+        if(discardTransform.TryGetComponent(out DeckPileView deckPileView))
+        {
+            deckPileView.RefreshPile(discardCount);
+        }
     }
 
     public void RefreshDiscardPilePannel(bool isLocalPlayer,

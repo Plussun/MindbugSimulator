@@ -16,6 +16,12 @@ public class DiscardPileView : MonoBehaviour, IPointerClickHandler
     public void SetClickAction(Action<bool> action)
     {
         clickAction = action;
+
+        // 文字矩形通常大于实际内容，让名称底板负责命中，避免空白处也能点击。
+        foreach(TMP_Text text in GetComponentsInChildren<TMP_Text>(true))
+        {
+            text.raycastTarget = false;
+        }
     }
 
 

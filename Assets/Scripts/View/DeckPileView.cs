@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 只负责牌库的显示。数量由ViewController根据客户端快照传入。
 public class DeckPileView : MonoBehaviour
@@ -27,6 +28,15 @@ public class DeckPileView : MonoBehaviour
         {
             GameObject cardBack = Instantiate(
                 DeckCardBackPrefab, DeckStartPoint, false);
+            // 弃牌堆的卡背需要接收射线，点击事件会向上传递给DiscardPileView。
+            // 牌库共用这个预制体，仍保留其原本不接收点击的设置。
+            if(TryGetComponent<DiscardPileView>(out _))
+            {
+                foreach(Graphic graphic in cardBack.GetComponentsInChildren<Graphic>(true))
+                {
+                    graphic.raycastTarget = true;
+                }
+            }
             cardBacks.Add(cardBack);
         }
 
