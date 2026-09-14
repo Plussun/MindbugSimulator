@@ -5,12 +5,18 @@ public class DiscardHandEvent : GameEvent
     public int PlayerID;
     public bool RandomDiscard;
     public int Count;
+    public string SourceCardName;
 
-    public DiscardHandEvent(int playerID, bool randomDiscard, int count)
+    public DiscardHandEvent(
+        int playerID,
+        bool randomDiscard,
+        int count,
+        string sourceCardName)
     {
         PlayerID = playerID;
         RandomDiscard = randomDiscard;
         Count = count;
+        SourceCardName = sourceCardName;
     }
 
     public override void Resolve(GameEngine gameEngine)
@@ -31,7 +37,8 @@ public class DiscardHandEvent : GameEvent
                 MaxSelectCount = Count,
                 MinSelectCount = Count<candidateCardInstanceIDs.Count?
                     Count:candidateCardInstanceIDs.Count,
-                CandidateCardInstanceIDs = candidateCardInstanceIDs
+                CandidateCardInstanceIDs = candidateCardInstanceIDs,
+                Prompt = "「" + SourceCardName + "」的效果：请选择要弃掉的手牌"
             }, gameEngine, this);
             return;
         }

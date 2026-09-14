@@ -4,12 +4,17 @@ public class DeployACardFromDiscardPileEvent : GameEvent
 {
     public int PlayerID;
     public bool fromLocalDiscardPile; // true表示从本地玩家的弃牌堆中部署，false表示从对手的弃牌堆中部署
+    public string SourceCardName;
 
 
-    public DeployACardFromDiscardPileEvent(int playerID, bool fromLocalDiscardPile)
+    public DeployACardFromDiscardPileEvent(
+        int playerID,
+        bool fromLocalDiscardPile,
+        string sourceCardName)
     {
         PlayerID = playerID;
         this.fromLocalDiscardPile = fromLocalDiscardPile;
+        SourceCardName = sourceCardName;
 
     }
 
@@ -41,7 +46,8 @@ public class DeployACardFromDiscardPileEvent : GameEvent
             PlayerID = PlayerID,
             MaxSelectCount = 1,
             MinSelectCount = 1,
-            CandidateCardInstanceIDs = CandidateCardInstanceIDs
+            CandidateCardInstanceIDs = CandidateCardInstanceIDs,
+            Prompt = "「" + SourceCardName + "」的效果：请选择要从弃牌区部署的生物"
         }, gameEngine, this);
 
     }

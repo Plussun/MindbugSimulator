@@ -34,7 +34,9 @@ public class AttackEvent : GameEvent
                     PlayerID = AttackerPlayerID,
                     MaxSelectCount = 1,
                     MinSelectCount = 0,
-                    CandidateCardInstanceIDs = candidateCardInstanceIDs
+                    CandidateCardInstanceIDs = candidateCardInstanceIDs,
+                    Prompt = "猎杀：请选择一只敌方生物；它必须阻挡「" +
+                        attackCard.CardData.CardName + "」的本次攻击"
                 }, gameEngine, this);
                 return;
             }

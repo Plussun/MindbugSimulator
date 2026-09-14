@@ -110,6 +110,7 @@ public class PendingChoiceSnapshot
     public int MaxSelectCount;
     public int MinSelectCount;
     public int[] CandidateCardInstanceIDs;
+    public string Prompt;
 
     public static PendingChoiceSnapshot Capture(PendingChoice pendingChoice)
     {
@@ -123,6 +124,7 @@ public class PendingChoiceSnapshot
             PlayerID = pendingChoice.PlayerID,
             MaxSelectCount = pendingChoice.MaxSelectCount,
             MinSelectCount = pendingChoice.MinSelectCount,
+            Prompt = pendingChoice.Prompt ?? string.Empty,
             CandidateCardInstanceIDs = pendingChoice.CandidateCardInstanceIDs != null
                 ? pendingChoice.CandidateCardInstanceIDs.ToArray()
                 : new int[0]

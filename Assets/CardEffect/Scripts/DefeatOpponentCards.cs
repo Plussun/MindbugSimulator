@@ -28,6 +28,7 @@ public class DefeatOpponentCards : CardEffect
                 MaxPower,
                 DefeatAll,
                 CanTargetAlliedCards,
-                OnlyIfFewerCreatures));
+                OnlyIfFewerCreatures,
+                cardInstance.CardData.CardName));
     }
 }

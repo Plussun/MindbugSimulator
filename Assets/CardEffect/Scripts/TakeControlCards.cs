@@ -18,6 +18,7 @@ public class TakeControlCards : CardEffect
                 MinCount,
                 MaxCount,
                 MinPower,
-                MaxPower));
+                MaxPower,
+                cardInstance.CardData.CardName));
     }
 }

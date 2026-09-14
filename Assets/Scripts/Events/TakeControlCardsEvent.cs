@@ -8,19 +8,22 @@ public class TakeControlCardsEvent : GameEvent
     public int MaxCount;
     public int MinPower;
     public int MaxPower;
+    public string SourceCardName;
 
     public TakeControlCardsEvent(
         int playerID,
         int minCount,
         int maxCount,
         int minPower,
-        int maxPower)
+        int maxPower,
+        string sourceCardName)
     {
         PlayerID = playerID;
         MinCount = minCount;
         MaxCount = maxCount;
         MinPower = minPower;
         MaxPower = maxPower;
+        SourceCardName = sourceCardName;
     }
 
     public override void Resolve(GameEngine gameEngine)
@@ -52,7 +55,8 @@ public class TakeControlCardsEvent : GameEvent
             PlayerID = PlayerID,
             MinSelectCount = Mathf.Min(MinCount, candidateCardInstanceIDs.Count),
             MaxSelectCount = Mathf.Min(MaxCount, candidateCardInstanceIDs.Count),
-            CandidateCardInstanceIDs = candidateCardInstanceIDs
+            CandidateCardInstanceIDs = candidateCardInstanceIDs,
+            Prompt = "「" + SourceCardName + "」的效果：请选择要控制的敌方生物"
         }, gameEngine, this);
     }
 

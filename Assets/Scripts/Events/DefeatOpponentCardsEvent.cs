@@ -11,6 +11,7 @@ public class DefeatOpponentCardsEvent : GameEvent
     public bool DefeatAll;
     public bool CanTargetAlliedCards;
     public bool OnlyIfFewerCreatures;
+    public string SourceCardName;
 
     public List<(int playerID, int cardInstanceID)> CandidateTargets;
 
@@ -22,7 +23,8 @@ public class DefeatOpponentCardsEvent : GameEvent
         int maxPower,
         bool defeatAll,
         bool canTargetAlliedCards,
-        bool onlyIfFewerCreatures)
+        bool onlyIfFewerCreatures,
+        string sourceCardName)
     {
         PlayerID = playerID;
         MinCount = minCount;
@@ -32,6 +34,7 @@ public class DefeatOpponentCardsEvent : GameEvent
         DefeatAll = defeatAll;
         CanTargetAlliedCards = canTargetAlliedCards;
         OnlyIfFewerCreatures = onlyIfFewerCreatures;
+        SourceCardName = sourceCardName;
         CandidateTargets = new List<(int, int)>();
     }
 
@@ -91,7 +94,8 @@ public class DefeatOpponentCardsEvent : GameEvent
             PlayerID = PlayerID,
             MinSelectCount = Mathf.Min(MinCount, candidateCardInstanceIDs.Count),
             MaxSelectCount = Mathf.Min(MaxCount, candidateCardInstanceIDs.Count),
-            CandidateCardInstanceIDs = candidateCardInstanceIDs
+            CandidateCardInstanceIDs = candidateCardInstanceIDs,
+            Prompt = "「" + SourceCardName + "」的效果：请选择要击败的生物"
         }, gameEngine, this);
     }
 

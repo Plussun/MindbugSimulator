@@ -48,4 +48,7 @@ public class PendingChoice
     public int MaxSelectCount;
     public int MinSelectCount;
     public List<int> CandidateCardInstanceIDs;
+
+    // 说明本次选择由哪条规则或哪张卡牌引起，供客户端显示明确提示。
+    public string Prompt;
 }

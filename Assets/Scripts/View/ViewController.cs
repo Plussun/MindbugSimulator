@@ -100,7 +100,8 @@ public partial class ViewController : MonoBehaviour
             hasPendingChoice: snapshot.HasPendingChoice,
             maxSelectCount: snapshot.MaxSelectCount,
             minSelectCount: snapshot.MinSelectCount,
-            candidateCardInstanceIDs: snapshot.CandidateCardInstanceIDs
+            candidateCardInstanceIDs: snapshot.CandidateCardInstanceIDs,
+            choicePrompt: snapshot.ChoicePrompt
         );
     }
     public void RefreshView(
@@ -127,7 +128,8 @@ public partial class ViewController : MonoBehaviour
         bool hasPendingChoice,
         int maxSelectCount,
         int minSelectCount,
-        int[] candidateCardInstanceIDs
+        int[] candidateCardInstanceIDs,
+        string choicePrompt
         )
     {
         currentPhase = (GamePhase)gamePhase;
@@ -145,7 +147,8 @@ public partial class ViewController : MonoBehaviour
                 PlayerID = localPlayerID,
                 MaxSelectCount = maxSelectCount,
                 MinSelectCount = minSelectCount,
-                CandidateCardInstanceIDs = new List<int>(candidateCardInstanceIDs)
+                CandidateCardInstanceIDs = new List<int>(candidateCardInstanceIDs),
+                Prompt = choicePrompt
             };
         }
         else

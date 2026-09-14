@@ -10,7 +10,10 @@ public class DeployACardFromDiscardPile : CardEffect
         int ownerPlayerID, 
         CardInstance cardInstance)
     {
-        gameEngine.EventQueue.EnqueueNext(new DeployACardFromDiscardPileEvent(ownerPlayerID, fromLocalDiscardPile));
+        gameEngine.EventQueue.EnqueueNext(new DeployACardFromDiscardPileEvent(
+            ownerPlayerID,
+            fromLocalDiscardPile,
+            cardInstance.CardData.CardName));
         
     }
 }

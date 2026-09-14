@@ -112,7 +112,10 @@ public partial class ViewController
 
             case GamePhase.WaitingForChoice:
                 InformationText.text = isLocalPlayerExpected
-                    ? GetChoiceInformation(minSelectCount, maxSelectCount)
+                    ? GetChoiceInformation(
+                        pendingChoice != null ? pendingChoice.Prompt : string.Empty,
+                        minSelectCount,
+                        maxSelectCount)
                     : "等待对手选择卡牌";
                 break;
 
@@ -122,18 +125,27 @@ public partial class ViewController
         }
     }
 
-    private string GetChoiceInformation(int minSelectCount, int maxSelectCount)
+    // 在规则原因之后补充数量要求，让玩家同时知道“为什么选”和“要选几张”。
+    private string GetChoiceInformation(
+        string prompt,
+        int minSelectCount,
+        int maxSelectCount)
     {
+        string reason = string.IsNullOrWhiteSpace(prompt)
+            ? "请选择卡牌"
+            : prompt;
+
         if(minSelectCount == maxSelectCount)
         {
-            return "请选择" + minSelectCount + "张卡牌";
+            return reason + "（选择" + minSelectCount + "张）";
         }
         if(minSelectCount == 0)
         {
-            return "请选择至多" + maxSelectCount + "张卡牌";
+            return reason + "（可选择至多" + maxSelectCount + "张）";
         }
 
-        return "请选择" + minSelectCount + "至" + maxSelectCount + "张卡牌";
+        return reason + "（选择" + minSelectCount + "至" +
+            maxSelectCount + "张）";
     }
 
     // 选择过程中直接更新本地提示，不需要等待服务器再次同步状态。
@@ -146,12 +158,12 @@ public partial class ViewController
 
         if(choosedCards.Count < pendingChoice.MinSelectCount)
         {
-            InformationText.text = "已选择" + choosedCards.Count
+            InformationText.text = pendingChoice.Prompt + "：已选择" + choosedCards.Count
                 + "张，还需至少选择" + pendingChoice.MinSelectCount + "张";
         }
         else
         {
-            InformationText.text = "已选择" + choosedCards.Count
+            InformationText.text = pendingChoice.Prompt + "：已选择" + choosedCards.Count
                 + "张，请点击确认选择";
         }
     }

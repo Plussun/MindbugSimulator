@@ -308,7 +308,10 @@ public class NetworkController : NetworkBehaviour
                 : 0,
             CandidateCardInstanceIDs = canSeePendingChoice
                 ? pendingChoice.CandidateCardInstanceIDs
-                : new int[0]
+                : new int[0],
+            ChoicePrompt = canSeePendingChoice
+                ? pendingChoice.Prompt ?? string.Empty
+                : string.Empty
         };
     }
 

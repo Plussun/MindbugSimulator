@@ -34,6 +34,7 @@ public struct ClientGameStateSnapshot : INetworkSerializable
     public int MaxSelectCount;
     public int MinSelectCount;
     public int[] CandidateCardInstanceIDs;
+    public string ChoicePrompt;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer)
         where T : IReaderWriter
@@ -66,5 +67,6 @@ public struct ClientGameStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref MaxSelectCount);
         serializer.SerializeValue(ref MinSelectCount);
         serializer.SerializeValue(ref CandidateCardInstanceIDs);
+        serializer.SerializeValue(ref ChoicePrompt);
     }
 }

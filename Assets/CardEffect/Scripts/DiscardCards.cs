@@ -14,6 +14,10 @@ public class DiscardCards : CardEffect
         int opponentPlayerID = 1 - ownerPlayerID;
         //测试，随机弃牌
         gameEngine.EventQueue.EnqueueNext(
-            new DiscardHandEvent(opponentPlayerID, random, CardsToDiscard));
+            new DiscardHandEvent(
+                opponentPlayerID,
+                random,
+                CardsToDiscard,
+                cardInstance.CardData.CardName));
     }
 }
