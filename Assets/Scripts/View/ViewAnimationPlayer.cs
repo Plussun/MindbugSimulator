@@ -33,6 +33,10 @@ public struct CardMoveAnimationTarget
 // 动画队列、状态刷新和整体播放流程由ViewController负责。
 public class ViewAnimationPlayer : MonoBehaviour
 {
+    [Header("声音")]
+    [Tooltip("负责播放背景音乐和游戏音效的组件。")]
+    public GameAudioPlayer AudioPlayer;
+
     [Header("战斗动画")]
     public float CombatPrepareDuration = 0.10f;
     public float CombatStrikeDuration = 0.12f;

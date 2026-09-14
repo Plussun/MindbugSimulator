@@ -33,6 +33,11 @@ public class GameEngine
 
         ShuffleDeck(State.ActivePlayerID);
         ShuffleDeck(1 - State.ActivePlayerID);
+
+        // 规则层只记录“新一局开始”这一事实，不直接引用或播放任何音频。
+        // 客户端显示层会在处理此事件时重播BGM，然后继续处理后面的发牌事件。
+        RecordAnimationEvent(GameAnimationType.GameStart);
+
         Refill(State.ActivePlayerID);
         Refill(1 - State.ActivePlayerID);
         Debug.Log("游戏开始，当前游戏阶段" + State.CurrentPhase);

@@ -35,6 +35,12 @@ public partial class ViewController
 
             switch(animationEvent.AnimationType)
             {
+                case GameAnimationType.GameStart:
+                    // 每局开始事件都重新播放，因此点击“再来一局”后音乐会从头开始。
+                    // 音频行为只存在于显示层，GameEngine并不知道具体播放了什么。
+                    AnimationPlayer.AudioPlayer?.RestartBackgroundMusic();
+                    break;
+
                 case GameAnimationType.DrawCard:
                     if(animationEvent.PlayerID ==
                         animationEvent.StateAfterEvent.LocalPlayerID)

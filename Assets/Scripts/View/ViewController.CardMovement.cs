@@ -122,6 +122,10 @@ public partial class ViewController
             cardView.GetComponent<Animator>().SetTrigger("Flip");
         }
 
+        // 在卡牌真正开始离开手牌时播放，双方客户端会随同一动画事件同步听到。
+        // 音效属于显示层，不放进服务器规则代码，避免主机额外播放或重复播放。
+        AnimationPlayer.AudioPlayer?.PlayCard();
+
         CardAnimationStartPose startPose = CaptureAnimationStart(cardView);
 
         // 临时放入待选区，以正式显示比例计算准确的动画终点。

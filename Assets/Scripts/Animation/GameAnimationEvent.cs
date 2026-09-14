@@ -67,5 +67,7 @@ public enum GameAnimationType
     // 一名玩家把自己的整个弃牌堆拿回手牌。
     ReturnDiscardPileToHand,
     // 撞击生物或玩家头像，快照保留扣血、阵亡和坚韧结算之前的场面。
-    Combat
+    Combat,
+    // 新一局开始。显示层收到后重播BGM，再继续处理发牌动画。
+    GameStart
 }
