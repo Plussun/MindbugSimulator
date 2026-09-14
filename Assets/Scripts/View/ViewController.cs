@@ -6,6 +6,7 @@ using TMPro;
 public partial class ViewController : MonoBehaviour
 {
     public GameObject CardViewPrefab;
+    public GameObject MindbugPrefab;
     public Transform LocalPlayer;
     public Transform OpponentPlayer;
     public Transform PendingCardsContainer;

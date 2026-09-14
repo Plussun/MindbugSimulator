@@ -4,6 +4,10 @@ using TMPro;
 
 public partial class ViewController
 {
+    // 双方各自保存已生成的指示物，数量没变时直接复用。
+    private readonly List<GameObject> localMindbugViews = new List<GameObject>();
+    private readonly List<GameObject> opponentMindbugViews = new List<GameObject>();
+
     // 增量刷新本方手牌。删除工作由所有区域处理完成后的统一清理负责。
     public void RefreshLocalHandView(
         CardNetworkState[] cards,
@@ -233,7 +237,7 @@ public partial class ViewController
             PendingCardsContainer);
         cardView.SetPointerActions(null, null, false);
         cardView.transform.localPosition = new Vector3(0, 0, 0); // 调整卡牌位置
-        cardView.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // 确保卡牌缩放为0.5
+        cardView.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f); // 确保卡牌缩放为0.6
     }
 
     public void RefreshPlayerPortrait(bool isLocalPlayer, int life, int mindbugCount,
@@ -243,10 +247,40 @@ public partial class ViewController
             isLocalPlayer ? LocalPlayer.Find("Portrait") : OpponentPlayer.Find("Portrait");
         TMP_Text lifeText = portraitTransform.Find("LifeText").GetComponent<TMP_Text>();
         lifeText.text = life.ToString();
-        TMP_Text mindbugText = portraitTransform.Find("MindbugCount").GetComponent<TMP_Text>();
-        mindbugText.text = mindbugCount.ToString();
+        RefreshMindbugViews(portraitTransform, isLocalPlayer, mindbugCount);
         GameObject expectedText = portraitTransform.Find("Highlight").gameObject;
         expectedText.SetActive(isPlayerExpected);
+    }
+
+    private void RefreshMindbugViews(Transform portrait, bool isLocalPlayer, int count)
+    {
+        Transform container = portrait.Find("Mindbugs");
+        if(container == null || MindbugPrefab == null)
+        {
+            Debug.LogWarning("请绑定ViewController的MindbugPrefab，并在Portrait下准备mindbugs节点");
+            return;
+        }
+
+        List<GameObject> views = isLocalPlayer ? localMindbugViews : opponentMindbugViews;
+        count = Mathf.Max(0, count);
+        while(views.Count < count)
+        {
+            GameObject token = Instantiate(MindbugPrefab, container, false);
+            RectTransform tokenRect = (RectTransform)token.transform;
+            // 第一个-25，第二个+25。消耗后保留第一个的位置，不重新居中。
+            tokenRect.anchoredPosition = new Vector2(-25f + 50f * views.Count, 0f);
+            views.Add(token);
+        }
+
+        while(views.Count > count)
+        {
+            int lastIndex = views.Count - 1;
+            GameObject token = views[lastIndex];
+            views.RemoveAt(lastIndex);
+            // Destroy到帧末才执行，先隐藏，避免刷新时短暂显示多余指示物。
+            token.SetActive(false);
+            Destroy(token);
+        }
     }
 
     public void RefreshDiscardCount(bool isLocalPlayer, int discardCount)
