@@ -8,6 +8,47 @@ public partial class ViewController
     private readonly List<GameObject> localMindbugViews = new List<GameObject>();
     private readonly List<GameObject> opponentMindbugViews = new List<GameObject>();
 
+    // 在场地布局完成后，为服务器确认的攻击牌追加显示姿态。
+    // 本方场地位于屏幕下方，所以向上前突；对方场地则向下前突。
+    private void RefreshAttackPose(CardNetworkState pendingAttack)
+    {
+        if(pendingAttack.CardInstanceID == -1 ||
+            !cardViews.TryGetValue(
+                pendingAttack.CardInstanceID,
+                out CardView attackCard))
+        {
+            return;
+        }
+
+        Transform localField = LocalPlayer.Find("Field");
+        Transform opponentField = OpponentPlayer.Find("Field");
+        float direction;
+
+        if(attackCard.transform.parent == localField)
+        {
+            direction = 1f;
+        }
+        else if(attackCard.transform.parent == opponentField)
+        {
+            direction = -1f;
+        }
+        else
+        {
+            // PendingAttack正常情况下只会位于场地；如果状态仍在区域迁移中，
+            // 保留该区域自己的布局，避免错误地把卡牌当成对方场地卡牌。
+            return;
+        }
+
+        RectTransform attackCardRect = attackCard.transform as RectTransform;
+        attackCardRect.anchoredPosition +=
+            Vector2.up * direction * AttackCardForwardDistance;
+        attackCardRect.localScale *= AttackCardScaleMultiplier;
+
+        // 布局已经完成，此时只调整绘制顺序，不会重新计算卡牌位置。
+        // 下一次刷新会先按服务器数组顺序恢复SiblingIndex，再重新进行场地布局。
+        attackCard.transform.SetAsLastSibling();
+    }
+
     // 增量刷新本方手牌。删除工作由所有区域处理完成后的统一清理负责。
     public void RefreshLocalHandView(
         CardNetworkState[] cards,

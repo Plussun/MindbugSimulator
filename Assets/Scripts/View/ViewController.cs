@@ -26,6 +26,11 @@ public partial class ViewController : MonoBehaviour
 
     public TMP_Text InformationText;
 
+    // 正在攻击的场地卡牌会稍微放大，并朝场地中央前突。
+    // 这里修改的是FieldCardLayout已经排好位置的卡牌根对象，不增加额外显示层级。
+    public float AttackCardForwardDistance = 35f;
+    public float AttackCardScaleMultiplier = 1.1f;
+
     public GameController gameController;
     public NetworkController networkController;
 
@@ -197,6 +202,11 @@ public partial class ViewController : MonoBehaviour
         LocalPlayer.Find("Hand").GetComponent<HandCardLayout>().RefreshLayout();
         LocalPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
         OpponentPlayer.Find("Field").GetComponent<FieldCardLayout>().RefreshLayout();
+
+        // 场地布局先恢复所有卡牌的标准位置与缩放，再为当前攻击牌追加攻击姿态。
+        // 因此每次刷新都从布局结果重新计算，不会反复累加位移或缩放。
+        RefreshAttackPose(pendingAttack);
+
         DiscardPilePannel.Find("local").GetComponent<DiscardPileLayout>().RefreshLayout();
         DiscardPilePannel.Find("opponent").GetComponent<DiscardPileLayout>().RefreshLayout();
         CardPreviewController.RefreshCurrentPreview();

@@ -904,6 +904,10 @@ public class GameEngine
         foreach(var defeatedCard in defeatedCards)
         {
             PlayerState player = State.Players[defeatedCard.playerID];
+
+            // 横置只表示Tough在本次留场期间已经抵消过一次击败。
+            // 卡牌真正离开场地后重置，避免它在弃牌区、回到手牌或再次部署时仍然横置。
+            defeatedCard.card.IsExhausted = false;
             defeatedCard.card.ClearTempEffects();
             player.Field.Remove(defeatedCard.card);
             player.DiscardPile.Add(defeatedCard.card);
