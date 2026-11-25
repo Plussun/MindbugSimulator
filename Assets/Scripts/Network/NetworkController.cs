@@ -59,7 +59,7 @@ public class NetworkController : NetworkBehaviour
 
 
     //以下为客户端的命令接收方法
-    //出牌请求
+    //出牌请求.
     public void PlayCardRequest(int cardInstanceId)
     {
         PlayCardServerRpc(cardInstanceId);
